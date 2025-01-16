@@ -1,0 +1,8 @@
+*.jar
+primjer.*
+*.lan
+*.zip
+file*.txt
+txt.txt
+
+.vscode
