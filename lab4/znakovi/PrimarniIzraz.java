@@ -1,4 +1,6 @@
 package lab4.znakovi;
 
-public class PrimarniIzraz extends TipLIzrazZnak {
+public class PrimarniIzraz extends TipLIzrazZnakLabela {
+
+    public String labela;
 }

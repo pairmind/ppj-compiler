@@ -1,5 +1,5 @@
 package lab4.znakovi;
 
-public class BinXiliIzraz extends TipLIzrazZnak {
+public class BinXiliIzraz extends TipLIzrazZnakLabela {
 
 }

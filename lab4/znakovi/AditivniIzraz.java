@@ -1,5 +1,5 @@
 package lab4.znakovi;
 
-public class AditivniIzraz extends TipLIzrazZnak{
+public class AditivniIzraz extends TipLIzrazZnakLabela{
 
 }

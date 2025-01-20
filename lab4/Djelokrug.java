@@ -129,12 +129,16 @@ public class Djelokrug {
       }
    }
    
-   public void zabiljeziIdentifikator(String ime, Tip tip){
+   public Identifikator zabiljeziIdentifikator(String ime, Tip tip){
       if(tip instanceof FunkcijaTip) {
-         funkcije.put(ime, new IdentifikatorFunkcije((FunkcijaTip) tip, ime));
+         IdentifikatorFunkcije idn = new IdentifikatorFunkcije((FunkcijaTip) tip, ime);
+         funkcije.put(ime, idn);
+         return idn;
       }
       else {
-         varijable.put(ime, new Identifikator(tip, ime));
+         Identifikator idn = new Identifikator(tip, ime);
+         varijable.put(ime, idn);
+         return idn;
       }
    }
 }

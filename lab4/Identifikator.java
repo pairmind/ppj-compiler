@@ -8,6 +8,9 @@ public class Identifikator {
    public String ime;
    public boolean l_izraz;
 
+   public String labela;
+   public String initalValue;
+
    public Identifikator(Tip tip, String ime) {
       this.tip = tip;
       this.ime = ime;
@@ -19,6 +22,9 @@ public class Identifikator {
       }
    }
 
+   public void setLabela(String labela) {
+      this.labela = labela;
+   }
 
 
 }
