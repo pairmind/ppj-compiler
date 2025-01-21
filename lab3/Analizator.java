@@ -1020,7 +1020,7 @@ public class Analizator {
                 Tip tipFunkcije = new FunkcijaTip(new Tip[0], de.ntip);
 
                 if (lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost)) {
-                    Tip tipDeklarirane = lokalniDjelokrug.varijabla(identifikator.vrijednost).tip;
+                    Tip tipDeklarirane = lokalniDjelokrug.funkcija(identifikator.vrijednost).tip;
                     assertOrError(tipDeklarirane.equals(tipFunkcije), de);
                 } else {
                     zabiljeziIdentifikator(identifikator.vrijednost, tipFunkcije);
