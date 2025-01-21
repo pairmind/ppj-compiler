@@ -1,15 +1,16 @@
 package lab3;
+
 import java.util.Arrays;
 
 import lab3.tip.*;
 import lab3.znakovi.*;
 
 public class Analizator {
-   
+
     private Djelokrug lokalniDjelokrug;
     private Djelokrug globalniDjelokrug;
 
-    public Analizator(){
+    public Analizator() {
         globalniDjelokrug = new Djelokrug();
         lokalniDjelokrug = globalniDjelokrug;
 
@@ -24,22 +25,21 @@ public class Analizator {
         // TODO provjere nakon stabla
     }
 
-
-    private void deklarirajFunkciju(String ime, FunkcijaTip tip){
+    private void deklarirajFunkciju(String ime, FunkcijaTip tip) {
         lokalniDjelokrug.zabiljeziIdentifikator(ime, tip);
     }
 
-    private void definirajFunkciju(String ime, FunkcijaTip tip){
+    private void definirajFunkciju(String ime, FunkcijaTip tip) {
         deklarirajFunkciju(ime, tip);
-        /// definirajFunkciju ce se jedino ikad zvati iz globalnog djelokruga 
-        /// tako da ce globalniDjelokrug.funkcija(ime) zasigurno postojati 
+        /// definirajFunkciju ce se jedino ikad zvati iz globalnog djelokruga
+        /// tako da ce globalniDjelokrug.funkcija(ime) zasigurno postojati
         /// iako deklarirajFunkciju radi nad lokalnim djelokrugom
         globalniDjelokrug.funkcija(ime).definirana = true;
     }
 
     public boolean postojiDefiniranaFunkcija(String ime) {
         IdentifikatorFunkcije funkcija = globalniDjelokrug.funkcija(ime);
-        if( funkcija == null ) {
+        if (funkcija == null) {
             return false;
         }
         return globalniDjelokrug.funkcija(ime).definirana;
@@ -54,6 +54,7 @@ public class Analizator {
             ispisiError(mistake);
         }
     }
+
     private void assertOrError(boolean condition, String mistake) {
         if (!condition) {
             ispisiError(mistake);
@@ -94,9 +95,8 @@ public class Analizator {
                 // <primarni_izraz> ::= BROJ
                 try {
                     Integer.parseInt(c.vrijednost);
-                }
-                catch (Exception e) {
-                    ispisiError(iz);  // integer izvan range-a (32 bit)
+                } catch (Exception e) {
+                    ispisiError(iz); // integer izvan range-a (32 bit)
                 }
 
                 iz.tip = new Tip(TipEnum.INT);
@@ -105,33 +105,31 @@ public class Analizator {
                 // <primarni_izraz> ::= ZNAK
                 // TODO: provjerit metodu
                 String chr = c.vrijednost.substring(1, c.vrijednost.length() - 1);
-                if(chr.equals("\\t") || chr.equals("\\n") || chr.equals("\\0") 
-                || chr.equals("\\'") || chr.equals("\\\"") || chr.equals("\\\\")
-                || chr.length() == 1 && ((int)chr.charAt(0)) >= 0 && ((int)chr.charAt(0)) < 128){
+                if (chr.equals("\\t") || chr.equals("\\n") || chr.equals("\\0")
+                        || chr.equals("\\'") || chr.equals("\\\"") || chr.equals("\\\\")
+                        || chr.length() == 1 && ((int) chr.charAt(0)) >= 0 && ((int) chr.charAt(0)) < 128) {
                     iz.tip = new Tip(TipEnum.CHAR);
                     iz.l_izraz = false;
-                }
-                else {
-                    ispisiError(iz);  // invalid char
+                } else {
+                    ispisiError(iz); // invalid char
                 }
 
             } else if (c.konstantaTip == KonstantaEnum.NIZ_ZNAKOVA) {
                 // <primarni_izraz> ::= NIZ_ZNAKOVA
                 String str = c.vrijednost.substring(1, c.vrijednost.length() - 1);
-                for(int i = 0; i < str.length(); i ++){
-                    if(str.charAt(i) == '\\') {
+                for (int i = 0; i < str.length(); i++) {
+                    if (str.charAt(i) == '\\') {
                         i++;
                         try {
                             char a = str.charAt(i);
-                            if(a != 't' && a != 'n' && a != '0' && a != '\'' && a != '"' && a != '\\') {
+                            if (a != 't' && a != 'n' && a != '0' && a != '\'' && a != '"' && a != '\\') {
                                 ispisiError(iz);
                             }
-                        }
-                        catch (IndexOutOfBoundsException e) {
+                        } catch (IndexOutOfBoundsException e) {
                             ispisiError(iz);
                         }
                     }
-                    if( ! ( ((int)str.charAt(i)) >= 0 && ((int)str.charAt(i)) < 128 ) ){
+                    if (!(((int) str.charAt(i)) >= 0 && ((int) str.charAt(i)) < 128)) {
                         ispisiError(iz);
                     }
                 }
@@ -163,15 +161,14 @@ public class Analizator {
 
             iz.tip = izraz.tip;
             iz.l_izraz = izraz.l_izraz;
-        }
-        else if (iz.children.get(0) instanceof PostfiksIzraz) {
+        } else if (iz.children.get(0) instanceof PostfiksIzraz) {
             PostfiksIzraz postfiksIzraz = (PostfiksIzraz) iz.children.get(0);
             if (iz.children.get(1) instanceof Konstanta) {
                 Konstanta k1 = (Konstanta) iz.children.get(1);
                 if (k1.konstantaTip == KonstantaEnum.L_UGL_ZAGRADA) {
                     // <postfiks_izraz> ::= <postfiks_izraz> L_UGL_ZAGRADA <izraz> D_UGL_ZAGRADA
                     Izraz izraz = (Izraz) iz.children.get(2);
-                    
+
                     provjeri(postfiksIzraz);
                     assertOrError(Tip.isNizX(postfiksIzraz.tip), iz);
                     provjeri(izraz);
@@ -647,7 +644,7 @@ public class Analizator {
             SlozenaNaredba naredba = (SlozenaNaredba) na.children.get(0);
             // slozena naredba u novom djelokrugu
             lokalniDjelokrug = new Djelokrug(lokalniDjelokrug);
-            if(na.parent instanceof NaredbaPetlje){
+            if (na.parent instanceof NaredbaPetlje) {
                 lokalniDjelokrug.tipDjelokruga = TipDjelokruga.PETLJA;
             }
             provjeri(naredba);
@@ -751,7 +748,7 @@ public class Analizator {
 
         } else if (kljucnaRijec == KonstantaEnum.KR_RETURN && na.children.size() == 2) {
             // <naredba_skoka> ::= KR_RETURN TOCKAZAREZ
-            
+
             assertOrError(lokalniDjelokrug.jeUnutarFunkcijePovratneVrijednosti(new Tip(TipEnum.VOID)), na);
 
         } else if (kljucnaRijec == KonstantaEnum.KR_RETURN && na.children.size() == 3) {
@@ -759,7 +756,9 @@ public class Analizator {
             Izraz izraz = (Izraz) na.children.get(1);
 
             provjeri(izraz);
-            assertOrError(Tip.seMozeImplicitnoPretvoritiIzU( izraz.tip, lokalniDjelokrug.povratniTipUgnjezdujuceFunkcije() ), na);
+            assertOrError(
+                    Tip.seMozeImplicitnoPretvoritiIzU(izraz.tip, lokalniDjelokrug.povratniTipUgnjezdujuceFunkcije()),
+                    na);
         }
     }
 
@@ -793,17 +792,18 @@ public class Analizator {
 
     public void provjeri(DefinicijaFunkcije de) {
         if (de.children.get(3) instanceof Konstanta) {
-            // <definicija_funkcije> ::= <ime_tipa> IDN L_ZAGRADA KR_VOID D_ZAGRADA <slozena_naredba>
+            // <definicija_funkcije> ::= <ime_tipa> IDN L_ZAGRADA KR_VOID D_ZAGRADA
+            // <slozena_naredba>
             ImeTipa imeTipa = (ImeTipa) de.children.get(0);
             Konstanta identifikator = (Konstanta) de.children.get(1);
             SlozenaNaredba slozenaNaredba = (SlozenaNaredba) de.children.get(5);
 
             provjeri(imeTipa);
-            assertOrError( ! Tip.isConstT(imeTipa.tip), de);
-            assertOrError( ! postojiDefiniranaFunkcija(identifikator.vrijednost), de);
+            assertOrError(!Tip.isConstT(imeTipa.tip), de);
+            assertOrError(!postojiDefiniranaFunkcija(identifikator.vrijednost), de);
             Identifikator funkcija = globalniDjelokrug.lokalnaVarijabla(identifikator.vrijednost);
             FunkcijaTip tipFunkcije = new FunkcijaTip(new Tip[0], imeTipa.tip);
-            if(funkcija != null) {
+            if (funkcija != null) {
                 assertOrError(funkcija.tip.equals(tipFunkcije), de);
             }
             definirajFunkciju(identifikator.vrijednost, tipFunkcije);
@@ -813,25 +813,26 @@ public class Analizator {
             lokalniDjelokrug = lokalniDjelokrug.ugnjezdujuciDjelokrug;
 
         } else if (de.children.get(3) instanceof ListaParametara) {
-            // <definicija_funkcije> ::= <ime_tipa> IDN L_ZAGRADA <lista_parametara> D_ZAGRADA <slozena_naredba>
+            // <definicija_funkcije> ::= <ime_tipa> IDN L_ZAGRADA <lista_parametara>
+            // D_ZAGRADA <slozena_naredba>
             ImeTipa imeTipa = (ImeTipa) de.children.get(0);
             Konstanta identifikator = (Konstanta) de.children.get(1);
             ListaParametara listaParametara = (ListaParametara) de.children.get(3);
             SlozenaNaredba slozenaNaredba = (SlozenaNaredba) de.children.get(5);
 
             provjeri(imeTipa);
-            assertOrError( ! Tip.isConstT(imeTipa.tip), de);
-            assertOrError( ! postojiDefiniranaFunkcija(identifikator.vrijednost), de);
+            assertOrError(!Tip.isConstT(imeTipa.tip), de);
+            assertOrError(!postojiDefiniranaFunkcija(identifikator.vrijednost), de);
             provjeri(listaParametara);
             Identifikator funkcija = globalniDjelokrug.lokalnaVarijabla(identifikator.vrijednost);
             FunkcijaTip tipFunkcije = new FunkcijaTip(listaParametara.tipovi, imeTipa.tip);
-            if(funkcija != null) {
+            if (funkcija != null) {
                 assertOrError(funkcija.tip.equals(tipFunkcije), de);
             }
             definirajFunkciju(identifikator.vrijednost, tipFunkcije);
             lokalniDjelokrug = new Djelokrug(lokalniDjelokrug);
             lokalniDjelokrug.setFunkcija(tipFunkcije);
-            for(int i = 0; i < listaParametara.tipovi.length; i++) {
+            for (int i = 0; i < listaParametara.tipovi.length; i++) {
                 lokalniDjelokrug.zabiljeziIdentifikator(listaParametara.imena[i], listaParametara.tipovi[i]);
             }
             provjeri(slozenaNaredba);
@@ -857,13 +858,13 @@ public class Analizator {
 
             provjeri(listaParametara);
             provjeri(deklaracijaParametra);
-            assertOrError(! Arrays.stream(listaParametara.imena).anyMatch(deklaracijaParametra.ime::equals), lp);
-            // boolean anyEqual = false;    // if anyMatch above does not work :)
+            assertOrError(!Arrays.stream(listaParametara.imena).anyMatch(deklaracijaParametra.ime::equals), lp);
+            // boolean anyEqual = false; // if anyMatch above does not work :)
             // for(String ime : listaParametara.imena) {
-            //     if( ime.equals(deklaracijaParametra.ime) ){
-            //         anyEqual = true;
-            //         break;
-            //     }
+            // if( ime.equals(deklaracijaParametra.ime) ){
+            // anyEqual = true;
+            // break;
+            // }
             // }
             // assertOrError(anyEqual, lp);
 
@@ -974,7 +975,8 @@ public class Analizator {
                 assertOrError(Tip.seMozeImplicitnoPretvoritiUT(inicijalizator.tip), de);
             } else if (Tip.isNizT(izravniDeklarator.tip) || Tip.isNizConstT(izravniDeklarator.tip)) {
                 assertOrError(inicijalizator.br_elem <= izravniDeklarator.br_elem, de);
-                assertOrError(inicijalizator.tipovi != null, de);   // TODO nije po uputama, ali popravlja jedan test-case. Nije mi jasno zasto je tu potrebno
+                assertOrError(inicijalizator.tipovi != null, de); // TODO nije po uputama, ali popravlja jedan
+                                                                  // test-case. Nije mi jasno zasto je tu potrebno
                 for (Tip u : inicijalizator.tipovi) {
                     assertOrError(Tip.seMozeImplicitnoPretvoritiUT(u), de);
                 }
@@ -989,8 +991,8 @@ public class Analizator {
             // <izravni_deklarator> ::= IDN
             Konstanta identifikator = (Konstanta) de.children.get(0);
 
-            assertOrError( ! de.ntip.equals(new Tip(TipEnum.VOID)), de);
-            assertOrError( ! lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost), de);
+            assertOrError(!de.ntip.equals(new Tip(TipEnum.VOID)), de);
+            assertOrError(!lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost), de);
             zabiljeziIdentifikator(identifikator.vrijednost, de.ntip);
 
             de.tip = de.ntip;
@@ -1000,13 +1002,12 @@ public class Analizator {
                 // <izravni_deklarator> ::= IDN L_UGL_ZAGRADA BROJ D_UGL_ZAGRADA
                 Konstanta identifikator = (Konstanta) de.children.get(0);
 
-                assertOrError( ! de.ntip.equals(new Tip(TipEnum.VOID)), de);
-                assertOrError( ! lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost), de);
+                assertOrError(!de.ntip.equals(new Tip(TipEnum.VOID)), de);
+                assertOrError(!lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost), de);
                 try {
                     Integer.parseInt(konstanta.vrijednost);
-                }
-                catch (Exception e) {
-                    ispisiError(de);  // integer izvan range-a (32 bit)
+                } catch (Exception e) {
+                    ispisiError(de); // integer izvan range-a (32 bit)
                 }
                 Tip tip = new KompozitniTip(TipEnum.NIZ, de.ntip);
                 zabiljeziIdentifikator(identifikator.vrijednost, tip);
@@ -1017,7 +1018,7 @@ public class Analizator {
                 // <izravni_deklarator> ::= IDN L_ZAGRADA KR_VOID D_ZAGRADA
                 Konstanta identifikator = (Konstanta) de.children.get(0);
                 Tip tipFunkcije = new FunkcijaTip(new Tip[0], de.ntip);
-                
+
                 if (lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost)) {
                     Tip tipDeklarirane = lokalniDjelokrug.varijabla(identifikator.vrijednost).tip;
                     assertOrError(tipDeklarirane.equals(tipFunkcije), de);
@@ -1031,16 +1032,16 @@ public class Analizator {
             // <izravni_deklarator> ::= IDN L_ZAGRADA <lista_parametara> D_ZAGRADA
             Konstanta identifikator = (Konstanta) de.children.get(0);
             ListaParametara listaParametara = (ListaParametara) de.children.get(2);
-            
+
             provjeri(listaParametara);
             Tip tipFunkcije = new FunkcijaTip(listaParametara.tipovi, de.ntip);
             if (lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost)) {
-                Tip tipDeklarirane = lokalniDjelokrug.varijabla(identifikator.vrijednost).tip;
+                Tip tipDeklarirane = lokalniDjelokrug.funkcija(identifikator.vrijednost).tip;
                 assertOrError(tipDeklarirane.equals(tipFunkcije), de);
             } else {
                 zabiljeziIdentifikator(identifikator.vrijednost, tipFunkcije);
             }
-            
+
             de.tip = tipFunkcije;
         }
     }
