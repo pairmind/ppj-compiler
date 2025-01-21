@@ -1019,7 +1019,7 @@ public class Analizator {
                 Konstanta identifikator = (Konstanta) de.children.get(0);
                 Tip tipFunkcije = new FunkcijaTip(new Tip[0], de.ntip);
 
-                if (lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost)) {
+                if (null != lokalniDjelokrug.funkcija(identifikator.vrijednost)) {
                     Tip tipDeklarirane = lokalniDjelokrug.funkcija(identifikator.vrijednost).tip;
                     assertOrError(tipDeklarirane.equals(tipFunkcije), de);
                 } else {
@@ -1035,7 +1035,7 @@ public class Analizator {
 
             provjeri(listaParametara);
             Tip tipFunkcije = new FunkcijaTip(listaParametara.tipovi, de.ntip);
-            if (lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost)) {
+            if (null != lokalniDjelokrug.funkcija(identifikator.vrijednost)) {
                 Tip tipDeklarirane = lokalniDjelokrug.funkcija(identifikator.vrijednost).tip;
                 assertOrError(tipDeklarirane.equals(tipFunkcije), de);
             } else {
