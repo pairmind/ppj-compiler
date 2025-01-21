@@ -1,6 +1,5 @@
 package lab4;
 
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -44,7 +43,7 @@ public class GeneratorKoda {
                 parent = s.pop();
                 parent.children.add(newnode);
                 // System.out.println("parent --" + parent.toString() + " child -- " +
-                //         newnode.toString());
+                // newnode.toString());
                 s.push(parent);
                 s.push(newnode); // current level
 
@@ -67,7 +66,7 @@ public class GeneratorKoda {
 
         Generator analizator = new Generator();
 
-        analizator.analiziraj((PrijevodnaJedinica) root);
+        System.out.println(analizator.generirajProgram((PrijevodnaJedinica) root));
 
     }
 

@@ -6,4 +6,5 @@ public class IzravniDeklarator extends Znak {
    public Tip ntip;
    public Tip tip;
    public int br_elem;
+   public String labela;
 }

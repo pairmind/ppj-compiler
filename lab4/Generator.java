@@ -1,7 +1,9 @@
 package lab4;
 
+import java.nio.channels.UnsupportedAddressTypeException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -10,7 +12,7 @@ import lab4.znakovi.*;
 
 public class Generator {
     private static int STACK_START = 0x40000;
-    
+
     private Djelokrug lokalniDjelokrug;
     private Djelokrug globalniDjelokrug;
 
@@ -20,38 +22,38 @@ public class Generator {
 
     private String generiraniKod;
 
-    public Generator(){
+    public Generator() {
         globalniDjelokrug = new Djelokrug();
         lokalniDjelokrug = globalniDjelokrug;
 
         labelaIndeks = 0;
         sviIdentifikatori = new ArrayList<>();
+        sveFunkcije = new HashMap<String,IdentifikatorFunkcije>();
 
     }
 
-    public void analiziraj(PrijevodnaJedinica prijevodnaJedinica) {
+    // public void analiziraj(PrijevodnaJedinica prijevodnaJedinica) {
 
-        provjeri(prijevodnaJedinica);
+    // provjeri(prijevodnaJedinica);
 
-        assertOrError(postojiDefiniranaFunkcija("main"), "main");
+    // assertOrError(postojiDefiniranaFunkcija("main"), "main");
 
-    }
-    
-    public String generiraj(PrijevodnaJedinica prijevodnaJedinica) {
+    // }
+
+    public String generirajProgram(PrijevodnaJedinica prijevodnaJedinica) {
         StringBuilder sb = new StringBuilder();
+        sb.append(String.format("\n\tMOVE %x, R7", STACK_START));
 
-        
-        provjeri(prijevodnaJedinica);
+        sb.append(generiraj(prijevodnaJedinica));
 
-        // TODO generiraj pocetne naredbe i skok na main;
-        // TODO generiraj kod ?
-        
         IdentifikatorFunkcije main = globalniDjelokrug.funkcija("main");
         assertOrError(main != null, "main");
 
+        sb.append(String.format("\n\tCALL %s", main.labela));
+        sb.append("\n\tHALT");
+
         sb.append(generirajFunkcije());
         sb.append(generirajLokacijeIdentifikatora());
-
 
         generiraniKod = sb.toString();
         return generiraniKod;
@@ -60,12 +62,11 @@ public class Generator {
     private String generirajLokacijeIdentifikatora() {
         StringBuilder sb = new StringBuilder();
         // TODO podrska za identifikatore tipa niz i sl. Tip je vec zapisan u idn
-        for(Identifikator idn : sviIdentifikatori) {
-            if(idn.tip.equals(new Tip(TipEnum.INT))){
-                if(idn.initalValue != null){
+        for (Identifikator idn : sviIdentifikatori) {
+            if (idn.tip.equals(new Tip(TipEnum.INT))) {
+                if (idn.initalValue != null) {
                     sb.append(String.format("\n%s\tDW %%D %s", idn.labela, idn.initalValue));
-                }
-                else {
+                } else {
                     sb.append(String.format("\n%s\tDW %%D %s", idn.labela, "0"));
                 }
             }
@@ -75,35 +76,38 @@ public class Generator {
 
     private String generirajFunkcije() {
         StringBuilder sb = new StringBuilder();
-        for(Entry<String, IdentifikatorFunkcije> idfEntry : sveFunkcije.entrySet()) {
+        for (Entry<String, IdentifikatorFunkcije> idfEntry : sveFunkcije.entrySet()) {
             IdentifikatorFunkcije idf = idfEntry.getValue();
-            if(idf.labela == null) {
-                System.err.println(String.format("identifikator %s nema labelu a gneerirram mu funkciju?? kak su ju ikad druge funkcije pozivale/? huh", idf.ime));
+            if (idf.labela == null) {
+                System.err.println(String.format(
+                        "identifikator %s nema labelu a gneerirram mu funkciju?? kak su ju ikad druge funkcije pozivale/? huh",
+                        idf.ime));
                 throw new Error();
             }
-            if(!idf.definirana) {
+            if (!idf.definirana) {
                 System.err.println(String.format("funkcija %s nije definirana?? h/? huh", idf.ime));
                 throw new Error();
             }
             sb.append(String.format("\n%s\t", idf.labela));
-            sb.append(generiraniKod);
-
+            sb.append(idf.kodTjelaFunkcije);
         }
+        return sb.toString();
     }
 
     private String novoImeLabele() {
-        return String.format("L%6d", labelaIndeks++);
+        return String.format("L%06d", labelaIndeks++);
     }
 
     // TODO delete
     // private IdentifikatorFunkcije referncaNaFunkciju(String ime) {
-    //     if(sveFunkcije.containsKey(ime)){
-    //         return sveFunkcije.get(ime);
-    //     }
-    //     // else
+    // if(sveFunkcije.containsKey(ime)){
+    // return sveFunkcije.get(ime);
+    // }
+    // // else
     // }
 
-    // TODO pobrinut se da se nigdje ne zove lokalniDjelokrug.zabiljeziIdentifikator direktno
+    // TODO pobrinut se da se nigdje ne zove lokalniDjelokrug.zabiljeziIdentifikator
+    // direktno
     private Identifikator zabiljeziIdentifikator(String ime, Tip tip) {
         Identifikator idn = lokalniDjelokrug.zabiljeziIdentifikator(ime, tip);
         idn.labela = novoImeLabele();
@@ -111,11 +115,10 @@ public class Generator {
         return idn;
     }
 
-
-    private IdentifikatorFunkcije deklarirajFunkciju(String ime, FunkcijaTip tip){
-        if(sveFunkcije.containsKey(ime)) {
+    private IdentifikatorFunkcije deklarirajFunkciju(String ime, FunkcijaTip tip) {
+        if (sveFunkcije.containsKey(ime)) {
             zabiljeziIdentifikator(ime, tip);
-            return sveFunkcije.get(ime); 
+            return sveFunkcije.get(ime);
         }
         // else
         IdentifikatorFunkcije f = (IdentifikatorFunkcije) zabiljeziIdentifikator(ime, tip);
@@ -123,10 +126,10 @@ public class Generator {
         return f;
     }
 
-    private IdentifikatorFunkcije definirajFunkciju(String ime, FunkcijaTip tip){
+    private IdentifikatorFunkcije definirajFunkciju(String ime, FunkcijaTip tip) {
         IdentifikatorFunkcije f = deklarirajFunkciju(ime, tip);
-        /// definirajFunkciju ce se jedino ikad zvati iz globalnog djelokruga 
-        /// tako da ce globalniDjelokrug.funkcija(ime) zasigurno postojati 
+        /// definirajFunkciju ce se jedino ikad zvati iz globalnog djelokruga
+        /// tako da ce globalniDjelokrug.funkcija(ime) zasigurno postojati
         /// iako deklarirajFunkciju radi nad lokalnim djelokrugom
         globalniDjelokrug.funkcija(ime).definirana = true;
         f.definirana = true;
@@ -135,7 +138,7 @@ public class Generator {
 
     public boolean postojiDefiniranaFunkcija(String ime) {
         IdentifikatorFunkcije funkcija = globalniDjelokrug.funkcija(ime);
-        if( funkcija == null ) {
+        if (funkcija == null) {
             return false;
         }
         return globalniDjelokrug.funkcija(ime).definirana;
@@ -150,6 +153,7 @@ public class Generator {
             ispisiError(mistake);
         }
     }
+
     private void assertOrError(boolean condition, String mistake) {
         if (!condition) {
             ispisiError(mistake);
@@ -192,9 +196,8 @@ public class Generator {
             // <primarni_izraz> ::= BROJ
             try {
                 Integer.parseInt(c.vrijednost);
-            }
-            catch (Exception e) {
-                ispisiError(iz);  // integer izvan range-a (32 bit)
+            } catch (Exception e) {
+                ispisiError(iz); // integer izvan range-a (32 bit)
             }
 
             iz.tip = new Tip(TipEnum.INT);
@@ -202,48 +205,48 @@ public class Generator {
 
             StringBuilder sb = new StringBuilder();
             // TODO: provjerit naredbu za pushanje konstante na stack
-            sb.append(String.format("\n\tMOVE %%D %s, R1", Integer.parseInt(c.vrijednost))); 
-            sb.append("\n\tPUSH R1"); 
+            sb.append(String.format("\n\tMOVE %%D %s, R1", Integer.parseInt(c.vrijednost)));
+            sb.append("\n\tPUSH R1");
             return sb.toString();
 
         } else if (c.konstantaTip == KonstantaEnum.ZNAK) {
             // <primarni_izraz> ::= ZNAK
             // TODO: provjerit metodu
-            throw new UnsupportedOperationException();  // TODO support
+            throw new UnsupportedOperationException(); // TODO support
+            /* 
             String chr = c.vrijednost.substring(1, c.vrijednost.length() - 1);
-            if(chr.equals("\\t") || chr.equals("\\n") || chr.equals("\\0") 
-            || chr.equals("\\'") || chr.equals("\\\"") || chr.equals("\\\\")
-            || chr.length() == 1 && ((int)chr.charAt(0)) >= 0 && ((int)chr.charAt(0)) < 128){
+            if (chr.equals("\\t") || chr.equals("\\n") || chr.equals("\\0")
+                    || chr.equals("\\'") || chr.equals("\\\"") || chr.equals("\\\\")
+                    || chr.length() == 1 && ((int) chr.charAt(0)) >= 0 && ((int) chr.charAt(0)) < 128) {
                 iz.tip = new Tip(TipEnum.CHAR);
                 iz.l_izraz = false;
-            }
-            else {
-                ispisiError(iz);  // invalid char
-            }
+            } else {
+                ispisiError(iz); // invalid char
+            }//* */
 
         } else if (c.konstantaTip == KonstantaEnum.NIZ_ZNAKOVA) {
             // <primarni_izraz> ::= NIZ_ZNAKOVA
-            throw new UnsupportedOperationException();  // TODO support
+            throw new UnsupportedOperationException(); // TODO support
+            /*
             String str = c.vrijednost.substring(1, c.vrijednost.length() - 1);
-            for(int i = 0; i < str.length(); i ++){
-                if(str.charAt(i) == '\\') {
+            for (int i = 0; i < str.length(); i++) {
+                if (str.charAt(i) == '\\') {
                     i++;
                     try {
                         char a = str.charAt(i);
-                        if(a != 't' && a != 'n' && a != '0' && a != '\'' && a != '"' && a != '\\') {
+                        if (a != 't' && a != 'n' && a != '0' && a != '\'' && a != '"' && a != '\\') {
                             ispisiError(iz);
                         }
-                    }
-                    catch (IndexOutOfBoundsException e) {
+                    } catch (IndexOutOfBoundsException e) {
                         ispisiError(iz);
                     }
                 }
-                if( ! ( ((int)str.charAt(i)) >= 0 && ((int)str.charAt(i)) < 128 ) ){
+                if (!(((int) str.charAt(i)) >= 0 && ((int) str.charAt(i)) < 128)) {
                     ispisiError(iz);
                 }
             }
             iz.tip = new KompozitniTip(TipEnum.NIZ, new KompozitniTip(TipEnum.CONST, new Tip(TipEnum.CHAR)));
-            iz.l_izraz = false;
+            iz.l_izraz = false;//* */
         } else {// if (c.konstantaTip == KonstantaEnum.L_ZAGRADA) {
             // <<primarni_izraz> ::= L_ZAGRADA <izraz> D_ZAGRADA
             Izraz izraz = (Izraz) iz.children.get(1);
@@ -267,15 +270,15 @@ public class Generator {
             iz.l_izraz = izraz.l_izraz;
             iz.labela = izraz.labela;
             return s;
-        }
-        else {
+        } else {
             PostfiksIzraz postfiksIzraz = (PostfiksIzraz) iz.children.get(0);
             Konstanta k1 = (Konstanta) iz.children.get(1);
             if (k1.konstantaTip == KonstantaEnum.L_UGL_ZAGRADA) {
                 // <postfiks_izraz> ::= <postfiks_izraz> L_UGL_ZAGRADA <izraz> D_UGL_ZAGRADA
-                throw new UnsupportedOperationException();  // TODO support
+                throw new UnsupportedOperationException(); // TODO support
+                /*
                 Izraz izraz = (Izraz) iz.children.get(2);
-                
+
                 generiraj(postfiksIzraz);
                 assertOrError(Tip.isNizX(postfiksIzraz.tip), iz);
                 generiraj(izraz);
@@ -283,10 +286,11 @@ public class Generator {
 
                 Tip X = ((KompozitniTip) postfiksIzraz.tip).subTip;
                 iz.tip = X;
-                iz.l_izraz = !Tip.isConstT(X);
+                iz.l_izraz = !Tip.isConstT(X);//* */
             } else if (k1.konstantaTip == KonstantaEnum.L_ZAGRADA && iz.children.size() == 3) {
                 // <postfiks_izraz> ::= <postfiks_izraz> L_ZAGRADA D_ZAGRADA
-                throw new UnsupportedOperationException();  // TODO support
+                throw new UnsupportedOperationException(); // TODO support
+                /* 
 
                 String s1 = generiraj(postfiksIzraz);
                 assertOrError(postfiksIzraz.tip instanceof FunkcijaTip, iz);
@@ -294,11 +298,11 @@ public class Generator {
                 assertOrError(funkcijaTip.isVoidFunction(), iz);
 
                 iz.tip = funkcijaTip.rval;
-                iz.l_izraz = false;
+                iz.l_izraz = false;//* */
             } else if (k1.konstantaTip == KonstantaEnum.L_ZAGRADA && iz.children.size() == 4) {
                 // <postfiks_izraz> ::= <postfiks_izraz> L_ZAGRADA <lista_argumenata> D_ZAGRADA
-                throw new UnsupportedOperationException();  // TODO support
-
+                throw new UnsupportedOperationException(); // TODO support
+/*
                 ListaArgumenata listaArgumenata = (ListaArgumenata) iz.children.get(2);
                 generiraj(postfiksIzraz);
                 provjeri(listaArgumenata);
@@ -310,7 +314,7 @@ public class Generator {
                 }
 
                 iz.tip = funkcijaTip.rval;
-                iz.l_izraz = false;
+                iz.l_izraz = false;//* */
 
             } else {
                 // <postfiks_izraz> ::= <postfiks_izraz> (OP_INC | OP_DEC)
@@ -325,10 +329,9 @@ public class Generator {
                 sb.append(s);
                 sb.append("\n\tPOP R0");
                 sb.append("\n\tPUSH R0");
-                if(k1.konstantaTip == KonstantaEnum.OP_INC){
-                    sb.append("\n'tADD R0, 1, R0");
-                }
-                else {
+                if (k1.konstantaTip == KonstantaEnum.OP_INC) {
+                    sb.append("\n\tADD R0, 1, R0");
+                } else {
                     sb.append("\n\tSUB R0, 1, R0");
                 }
                 sb.append(String.format("\n\tSTORE R0, %s", iz.labela));
@@ -342,7 +345,7 @@ public class Generator {
         if (la.children.get(0) instanceof IzrazPridruzivanja) {
             // <lista_argumenata> ::= <izraz_pridruzivanja>
             IzrazPridruzivanja izrazPridruzivanja = (IzrazPridruzivanja) la.children.get(0);
-            provjeri(izrazPridruzivanja);
+            // TODO provjeri(izrazPridruzivanja);
 
             Tip[] tipovi = { izrazPridruzivanja.tip };
             la.tipovi = tipovi;
@@ -352,7 +355,7 @@ public class Generator {
             IzrazPridruzivanja izrazPridruzivanja = (IzrazPridruzivanja) la.children.get(2);
 
             provjeri(listaArgumenata);
-            provjeri(izrazPridruzivanja);
+            // TODO provjeri(izrazPridruzivanja);
 
             Tip[] tipovi = new Tip[listaArgumenata.tipovi.length + 1];
             for (int i = 0; i < listaArgumenata.tipovi.length; i++) {
@@ -392,10 +395,9 @@ public class Generator {
             StringBuilder sb = new StringBuilder();
             sb.append(s);
             sb.append("\n\tPOP R0");
-            if(op.konstantaTip == KonstantaEnum.OP_INC){
-                sb.append("\n'tADD R0, 1, R0");
-            }
-            else {
+            if (op.konstantaTip == KonstantaEnum.OP_INC) {
+                sb.append("\n\tADD R0, 1, R0");
+            } else {
                 sb.append("\n\tSUB R0, 1, R0");
             }
             sb.append(String.format("\n\tSTORE R0, (%s)", unarniIzraz.labela));
@@ -405,18 +407,20 @@ public class Generator {
         } else {// if (ui.children.get(0) instanceof UnarniOperator) {
             // <unarni_izraz> ::= <unarni_operator> <cast_izraz>
             // UnarniOperator unarniOperator = (UnarniOperator) ui.children.get(0);
-            UnarniOperator unarniOperator = (UnarniOperator) ui.children.get(0);
-            CastIzraz castIzraz = (CastIzraz) ui.children.get(1);
+            throw new UnsupportedOperationException(); // TODOs
+            // UnarniOperator unarniOperator = (UnarniOperator) ui.children.get(0);
+            // CastIzraz castIzraz = (CastIzraz) ui.children.get(1);
 
-            String s1 = generiraj(castIzraz);
-            assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(castIzraz.tip, new Tip(TipEnum.INT)), ui);
+            // String s1 = generiraj(castIzraz);
+            // assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(castIzraz.tip, new
+            // Tip(TipEnum.INT)), ui);
 
-            String s2 = generiraj(unarniOperator);
+            // // TODO String s2 = generiraj(unarniOperator);
 
-            ui.tip = new Tip(TipEnum.INT);
-            ui.l_izraz = false;
+            // ui.tip = new Tip(TipEnum.INT);
+            // ui.l_izraz = false;
 
-            return s1 + s2;
+            // // return s1 + s2;
         }
     }
 
@@ -517,8 +521,8 @@ public class Generator {
             iz.l_izraz = false;
 
             throw new UnsupportedOperationException();
-            //TODO: implement mnozenje i djeljennje i sl.
-            //return s1+s2; // :)
+            // TODO: implement mnozenje i djeljennje i sl.
+            // return s1+s2; // :)
         }
     }
 
@@ -532,9 +536,9 @@ public class Generator {
             iz.tip = multiplikativniIzraz.tip;
             iz.l_izraz = multiplikativniIzraz.l_izraz;
             iz.labela = multiplikativniIzraz.labela;
-            
+
             return s;
-        } else if (iz.children.get(0) instanceof AditivniIzraz) {
+        } else {
             // <aditivni_izraz> ::= <aditivni_izraz> (PLUS | MINUS) <multiplikativni_izraz>
             AditivniIzraz aditivniIzraz = (AditivniIzraz) iz.children.get(0);
             Konstanta op = (Konstanta) iz.children.get(1);
@@ -553,10 +557,9 @@ public class Generator {
             sb.append(s2);
             sb.append("\n\tPOP R0");
             sb.append("\n\tPOP R1");
-            if(op.konstantaTip == KonstantaEnum.PLUS){
-                sb.append("\n'tADD R0, R1, R0");
-            }
-            else {
+            if (op.konstantaTip == KonstantaEnum.PLUS) {
+                sb.append("\n\tADD R0, R1, R0");
+            } else {
                 sb.append("\n\tSUB R0, R1, R0");
             }
             sb.append("\n\tPUSH R0");
@@ -660,7 +663,7 @@ public class Generator {
             // <bin_xili_izraz> ::= <bin_i_izraz>
             BinIIzraz binIIzraz = (BinIIzraz) iz.children.get(0);
 
-            String s  = generiraj(binIIzraz);
+            String s = generiraj(binIIzraz);
 
             iz.tip = binIIzraz.tip;
             iz.l_izraz = binIIzraz.l_izraz;
@@ -799,7 +802,7 @@ public class Generator {
             StringBuilder sb = new StringBuilder();
             sb.append(s1);
             sb.append(s2);
-            sb.append("\n\tPOP R0");    // will contain value of izraz_pridruzivanja
+            sb.append("\n\tPOP R0"); // will contain value of izraz_pridruzivanja
             sb.append("\n\tPOP R1");
             sb.append(String.format("\n\tSTORE R0, (%s)", postfiksIzraz.labela));
             sb.append("\n\tPUSH R0");
@@ -837,7 +840,7 @@ public class Generator {
             sb.append("\n\tPOP R0");
             sb.append("\n\tPOP R1");
             sb.append("\n\tPUSH R0");
-            
+
             return sb.toString();
         }
     }
@@ -849,8 +852,9 @@ public class Generator {
             ListaNaredbi listaNaredbi = (ListaNaredbi) na.children.get(1);
 
             return generiraj(listaNaredbi);
-        } else if (na.children.get(1) instanceof ListaDeklaracija) {
-            // <slozena_naredba> ::= L_VIT_ZAGRADA <lista_deklaracija> <lista_naredbi> D_VIT_ZAGRADA
+        } else {
+            // <slozena_naredba> ::= L_VIT_ZAGRADA <lista_deklaracija> <lista_naredbi>
+            // D_VIT_ZAGRADA
             ListaDeklaracija listaDeklaracija = (ListaDeklaracija) na.children.get(1);
             ListaNaredbi listaNaredbi = (ListaNaredbi) na.children.get(2);
 
@@ -874,8 +878,8 @@ public class Generator {
             String s1 = generiraj(listaNaredbi);
             String s2 = generiraj(naredba);
             return s1 + s2;
-        }
-        else throw new BadCodeError();
+        } else
+            throw new BadCodeError();
     }
 
     public String generiraj(Naredba na) {
@@ -883,7 +887,7 @@ public class Generator {
             SlozenaNaredba naredba = (SlozenaNaredba) na.children.get(0);
             // slozena naredba u novom djelokrugu
             lokalniDjelokrug = new Djelokrug(lokalniDjelokrug);
-            if(na.parent instanceof NaredbaPetlje){
+            if (na.parent instanceof NaredbaPetlje) {
                 lokalniDjelokrug.tipDjelokruga = TipDjelokruga.PETLJA;
             }
             String s1 = generiraj(naredba);
@@ -891,14 +895,17 @@ public class Generator {
             return s1;
         } else if (na.children.get(0) instanceof IzrazNaredba) {
             IzrazNaredba naredba = (IzrazNaredba) na.children.get(0);
-            return generiraj(naredba);
+            // TODO return generiraj(naredba);
+            throw new UnsupportedOperationException();
         } else if (na.children.get(0) instanceof NaredbaGrananja) {
             NaredbaGrananja naredba = (NaredbaGrananja) na.children.get(0);
-            return generiraj(naredba);
+            // TODO return generiraj(naredba);
+            throw new UnsupportedOperationException();
         } else if (na.children.get(0) instanceof NaredbaPetlje) {
             NaredbaPetlje naredba = (NaredbaPetlje) na.children.get(0);
-            return generiraj(naredba);
-        } else if (na.children.get(0) instanceof NaredbaSkoka) {
+            // TODO return generiraj(naredba);
+            throw new UnsupportedOperationException();
+        } else {
             NaredbaSkoka naredba = (NaredbaSkoka) na.children.get(0);
             return generiraj(naredba);
         }
@@ -989,17 +996,19 @@ public class Generator {
 
         } else if (kljucnaRijec == KonstantaEnum.KR_RETURN && na.children.size() == 2) {
             // <naredba_skoka> ::= KR_RETURN TOCKAZAREZ
-            
+
             assertOrError(lokalniDjelokrug.jeUnutarFunkcijePovratneVrijednosti(new Tip(TipEnum.VOID)), na);
 
             return "\nRET";
 
-        } else if (kljucnaRijec == KonstantaEnum.KR_RETURN && na.children.size() == 3) {
+        } else {
             // <naredba_skoka> ::= KR_RETURN <izraz> TOCKAZAREZ
             Izraz izraz = (Izraz) na.children.get(1);
 
             String s = generiraj(izraz);
-            assertOrError(Tip.seMozeImplicitnoPretvoritiIzU( izraz.tip, lokalniDjelokrug.povratniTipUgnjezdujuceFunkcije() ), na);
+            assertOrError(
+                    Tip.seMozeImplicitnoPretvoritiIzU(izraz.tip, lokalniDjelokrug.povratniTipUgnjezdujuceFunkcije()),
+                    na);
 
             StringBuilder sb = new StringBuilder();
             sb.append(s);
@@ -1009,79 +1018,85 @@ public class Generator {
         }
     }
 
-    public void provjeri(PrijevodnaJedinica pi) {
+    public String generiraj(PrijevodnaJedinica pi) {
         if (pi.children.get(0) instanceof VanjskaDeklaracija) {
             // <prijevodna_jedinica> ::= <vanjska_deklaracija>
             VanjskaDeklaracija vanjskaDeklaracija = (VanjskaDeklaracija) pi.children.get(0);
 
-            provjeri(vanjskaDeklaracija);
-        } else if (pi.children.get(0) instanceof PrijevodnaJedinica) {
+            return generiraj(vanjskaDeklaracija);
+        } else {
             // <prijevodna_jedinica> ::= <prijevodna_jedinica> <vanjska_deklaracija>
             PrijevodnaJedinica prijevodnaJedinica = (PrijevodnaJedinica) pi.children.get(0);
             VanjskaDeklaracija vanjskaDeklaracija = (VanjskaDeklaracija) pi.children.get(1);
 
-            provjeri(prijevodnaJedinica);
-            provjeri(vanjskaDeklaracija);
+            String s1 = generiraj(prijevodnaJedinica);
+            String s2 = generiraj(vanjskaDeklaracija);
+
+            return s1 + s2;
         }
     }
 
-    public String provjeri(VanjskaDeklaracija vd) {
+    public String generiraj(VanjskaDeklaracija vd) {
         if (vd.children.get(0) instanceof DefinicijaFunkcije) {
             DefinicijaFunkcije definicijaFunkcije = (DefinicijaFunkcije) vd.children.get(0);
 
             return generiraj(definicijaFunkcije);
         } else {
             Deklaracija deklaracija = (Deklaracija) vd.children.get(0);
-            return "";  // TODO
-            // return generiraj(deklaracija);
+            return generiraj(deklaracija);
         }
     }
 
     public String generiraj(DefinicijaFunkcije de) {
         if (de.children.get(3) instanceof Konstanta) {
-            // <definicija_funkcije> ::= <ime_tipa> IDN L_ZAGRADA KR_VOID D_ZAGRADA <slozena_naredba>
+            // <definicija_funkcije> ::= <ime_tipa> IDN L_ZAGRADA KR_VOID D_ZAGRADA
+            // <slozena_naredba>
             ImeTipa imeTipa = (ImeTipa) de.children.get(0);
             Konstanta identifikator = (Konstanta) de.children.get(1);
             SlozenaNaredba slozenaNaredba = (SlozenaNaredba) de.children.get(5);
 
             provjeri(imeTipa);
-            assertOrError( ! Tip.isConstT(imeTipa.tip), de);
-            assertOrError( ! postojiDefiniranaFunkcija(identifikator.vrijednost), de);
+            assertOrError(!Tip.isConstT(imeTipa.tip), de);
+            assertOrError(!postojiDefiniranaFunkcija(identifikator.vrijednost), de);
             Identifikator funkcija = globalniDjelokrug.lokalnaVarijabla(identifikator.vrijednost);
             FunkcijaTip tipFunkcije = new FunkcijaTip(new Tip[0], imeTipa.tip);
-            if(funkcija != null) {
+            if (funkcija != null) {
                 assertOrError(funkcija.tip.equals(tipFunkcije), de);
             }
             IdentifikatorFunkcije f = definirajFunkciju(identifikator.vrijednost, tipFunkcije);
             lokalniDjelokrug = new Djelokrug(lokalniDjelokrug);
             lokalniDjelokrug.setFunkcija(tipFunkcije);
-            f.kodTjelaFunkcije = generiraj(slozenaNaredba);
+            f.kodTjelaFunkcije = generiraj(slozenaNaredba) + "\n\tRET"; // jer void funkcije ne moraju imat return
             lokalniDjelokrug = lokalniDjelokrug.ugnjezdujuciDjelokrug;
             return "";
 
         } else if (de.children.get(3) instanceof ListaParametara) {
-            // <definicija_funkcije> ::= <ime_tipa> IDN L_ZAGRADA <lista_parametara> D_ZAGRADA <slozena_naredba>
+            // <definicija_funkcije> ::= <ime_tipa> IDN L_ZAGRADA <lista_parametara>
+            // D_ZAGRADA <slozena_naredba>
             ImeTipa imeTipa = (ImeTipa) de.children.get(0);
             Konstanta identifikator = (Konstanta) de.children.get(1);
             ListaParametara listaParametara = (ListaParametara) de.children.get(3);
             SlozenaNaredba slozenaNaredba = (SlozenaNaredba) de.children.get(5);
 
             provjeri(imeTipa);
-            assertOrError( ! Tip.isConstT(imeTipa.tip), de);
-            assertOrError( ! postojiDefiniranaFunkcija(identifikator.vrijednost), de);
+            assertOrError(!Tip.isConstT(imeTipa.tip), de);
+            assertOrError(!postojiDefiniranaFunkcija(identifikator.vrijednost), de);
             generiraj(listaParametara);
             Identifikator funkcija = globalniDjelokrug.lokalnaVarijabla(identifikator.vrijednost);
             FunkcijaTip tipFunkcije = new FunkcijaTip(listaParametara.tipovi, imeTipa.tip);
-            if(funkcija != null) {
+            if (funkcija != null) {
                 assertOrError(funkcija.tip.equals(tipFunkcije), de);
             }
             IdentifikatorFunkcije f = definirajFunkciju(identifikator.vrijednost, tipFunkcije);
             lokalniDjelokrug = new Djelokrug(lokalniDjelokrug);
             lokalniDjelokrug.setFunkcija(tipFunkcije);
-            for(int i = 0; i < listaParametara.tipovi.length; i++) {
+            for (int i = 0; i < listaParametara.tipovi.length; i++) {
+                // TODO TODO bitno, pobrinut se da oi dobiju labele, mozda pozivom funkcije ove
+                // klase
+                // also maknut argumente sa stacka il nes kad se poziva i sl. GL
                 lokalniDjelokrug.zabiljeziIdentifikator(listaParametara.imena[i], listaParametara.tipovi[i]);
             }
-            f.kodTjelaFunkcije = generiraj(slozenaNaredba);
+            f.kodTjelaFunkcije = generiraj(slozenaNaredba) + "\n\tRET"; // jer void funkcije ne moraju imat return;
             lokalniDjelokrug = lokalniDjelokrug.ugnjezdujuciDjelokrug;
             return "";
         }
@@ -1089,46 +1104,54 @@ public class Generator {
     }
 
     public String generiraj(ListaParametara lp) {
-        if (lp.children.get(0) instanceof DeklaracijaParametra) {
-            // <lista_parametara> ::= <deklaracija_parametra>
-            DeklaracijaParametra deklaracijaParametra = (DeklaracijaParametra) lp.children.get(0);
-
-            generiraj(deklaracijaParametra);    // TODO provjeri, al vjv ne vraca nis
-
-            Tip[] tipovi = { deklaracijaParametra.tip };
-            lp.tipovi = tipovi;
-            String[] imena = { deklaracijaParametra.ime };
-            lp.imena = imena;
-            return "";
-        } else if (lp.children.get(0) instanceof ListaParametara) {
-            // <lista_parametara> ::= <lista_parametara> ZAREZ <deklaracija_parametra>
-            ListaParametara listaParametara = (ListaParametara) lp.children.get(0);
-            DeklaracijaParametra deklaracijaParametra = (DeklaracijaParametra) lp.children.get(2);
-
-            generiraj(listaParametara);
-            provjeri(deklaracijaParametra);
-            assertOrError(! Arrays.stream(listaParametara.imena).anyMatch(deklaracijaParametra.ime::equals), lp);
-            // boolean anyEqual = false;    // if anyMatch above does not work :)
-            // for(String ime : listaParametara.imena) {
-            //     if( ime.equals(deklaracijaParametra.ime) ){
-            //         anyEqual = true;
-            //         break;
-            //     }
-            // }
-            // assertOrError(anyEqual, lp);
-
-            Tip[] tipovi = new Tip[listaParametara.tipovi.length + 1];
-            String[] imena = new String[listaParametara.imena.length + 1];
-            for (int i = 0; i < listaParametara.tipovi.length; i++) {
-                tipovi[i] = listaParametara.tipovi[i];
-                imena[i] = listaParametara.imena[i];
-            }
-            tipovi[listaParametara.tipovi.length] = deklaracijaParametra.tip;
-            imena[listaParametara.imena.length] = deklaracijaParametra.ime;
-
-            lp.tipovi = tipovi;
-            lp.imena = imena;
-        }
+        throw new UnsupportedOperationException();
+        /*
+         * if (lp.children.get(0) instanceof DeklaracijaParametra) {
+         * // <lista_parametara> ::= <deklaracija_parametra>
+         * DeklaracijaParametra deklaracijaParametra = (DeklaracijaParametra)
+         * lp.children.get(0);
+         * 
+         * // TODO generiraj(deklaracijaParametra); // TODO provjeri, al vjv ne vraca
+         * nis
+         * 
+         * Tip[] tipovi = { deklaracijaParametra.tip };
+         * lp.tipovi = tipovi;
+         * String[] imena = { deklaracijaParametra.ime };
+         * lp.imena = imena;
+         * return "";
+         * } else if (lp.children.get(0) instanceof ListaParametara) {
+         * // <lista_parametara> ::= <lista_parametara> ZAREZ <deklaracija_parametra>
+         * ListaParametara listaParametara = (ListaParametara) lp.children.get(0);
+         * DeklaracijaParametra deklaracijaParametra = (DeklaracijaParametra)
+         * lp.children.get(2);
+         * 
+         * generiraj(listaParametara);
+         * provjeri(deklaracijaParametra);
+         * assertOrError(!Arrays.stream(listaParametara.imena).anyMatch(
+         * deklaracijaParametra.ime::equals), lp);
+         * // boolean anyEqual = false; // if anyMatch above does not work :)
+         * // for(String ime : listaParametara.imena) {
+         * // if( ime.equals(deklaracijaParametra.ime) ){
+         * // anyEqual = true;
+         * // break;
+         * // }
+         * // }
+         * // assertOrError(anyEqual, lp);
+         * 
+         * Tip[] tipovi = new Tip[listaParametara.tipovi.length + 1];
+         * String[] imena = new String[listaParametara.imena.length + 1];
+         * for (int i = 0; i < listaParametara.tipovi.length; i++) {
+         * tipovi[i] = listaParametara.tipovi[i];
+         * imena[i] = listaParametara.imena[i];
+         * }
+         * tipovi[listaParametara.tipovi.length] = deklaracijaParametra.tip;
+         * imena[listaParametara.imena.length] = deklaracijaParametra.ime;
+         * 
+         * lp.tipovi = tipovi;
+         * lp.imena = imena;
+         * }
+         * //
+         */
     }
 
     public void provjeri(DeklaracijaParametra de) {
@@ -1161,51 +1184,53 @@ public class Generator {
             Deklaracija deklaracija = (Deklaracija) ld.children.get(0);
 
             return generiraj(deklaracija);
-        } else if (ld.children.get(0) instanceof ListaDeklaracija) {
+        } else {
             // <lista_deklaracija> ::= <lista_deklaracija> <deklaracija>
             ListaDeklaracija listaDeklaracija = (ListaDeklaracija) ld.children.get(0);
             Deklaracija deklaracija = (Deklaracija) ld.children.get(1);
 
-            // TODO provjeri, al vjv ne returnaju nis pa nije bitno
-            generiraj(listaDeklaracija);
-            generiraj(deklaracija);
-            return "";
+            String s1 = generiraj(listaDeklaracija);
+            String s2 = generiraj(deklaracija);
+            return s1+s2;
         }
     }
 
-    public void provjeri(Deklaracija de) {
+    public String generiraj(Deklaracija de) {
         // <deklaracija> ::= <ime_tipa> <lista_init_deklaratora> TOCKAZAREZ
         ImeTipa imeTipa = (ImeTipa) de.children.get(0);
         ListaInitDeklaratora listaInitDeklaratora = (ListaInitDeklaratora) de.children.get(1);
 
+        // TODO: handleat liste. mozda nije tu potrebno neg negdje drugdje, al generalno
         provjeri(imeTipa);
         listaInitDeklaratora.ntip = imeTipa.tip;
-        provjeri(listaInitDeklaratora);
+        return generiraj(listaInitDeklaratora);
 
     }
 
-    public void provjeri(ListaInitDeklaratora ld) {
+    public String generiraj(ListaInitDeklaratora ld) {
         if (ld.children.get(0) instanceof InitDeklarator) {
             // <lista_init_deklaratora> ::= <init_deklarator>
             InitDeklarator initDeklarator = (InitDeklarator) ld.children.get(0);
 
             initDeklarator.ntip = ld.ntip;
-            provjeri(initDeklarator);
-        } else if (ld.children.get(0) instanceof ListaInitDeklaratora) {
+            return generiraj(initDeklarator);
+        } else {
             // <lista_init_deklaratora>1 ::= <lista_init_deklaratora>2 ZAREZ
             // <init_deklarator>
             ListaInitDeklaratora listaInitDeklaratora = (ListaInitDeklaratora) ld.children.get(0);
             InitDeklarator initDeklarator = (InitDeklarator) ld.children.get(2);
 
             listaInitDeklaratora.ntip = ld.ntip;
-            provjeri(listaInitDeklaratora);
+            String s1 = generiraj(listaInitDeklaratora);
             initDeklarator.ntip = ld.ntip;
-            provjeri(initDeklarator);
+            String s2 = generiraj(initDeklarator);
+
+            return s1 + s2;
         }
 
     }
 
-    public void provjeri(InitDeklarator de) {
+    public String generiraj(InitDeklarator de) {
         if (de.children.size() == 1) {
             // <init_deklarator> ::= <izravni_deklarator>
             IzravniDeklarator izravniDeklarator = (IzravniDeklarator) de.children.get(0);
@@ -1214,25 +1239,37 @@ public class Generator {
             provjeri(izravniDeklarator);
             assertOrError(!Tip.isConstT(izravniDeklarator.tip), de);
             assertOrError(!Tip.isNizConstT(izravniDeklarator.tip), de);
-        } else if (de.children.size() == 3) {
+
+            return "";
+        } else {
             // <init_deklarator> ::= <izravni_deklarator> OP_PRIDRUZI <inicijalizator>
             IzravniDeklarator izravniDeklarator = (IzravniDeklarator) de.children.get(0);
             Inicijalizator inicijalizator = (Inicijalizator) de.children.get(2);
 
             izravniDeklarator.ntip = de.ntip;
             provjeri(izravniDeklarator);
-            provjeri(inicijalizator);
+            String s2 = generiraj(inicijalizator);
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(s2);
+            sb.append("\n\tPOP R0");
+            sb.append(String.format("\n\tSTORE R0, (%s)", izravniDeklarator.labela));
+
+            // TODO handleat nizove
             if (Tip.isT(izravniDeklarator.tip) || Tip.isConstT(izravniDeklarator.tip)) {
                 assertOrError(Tip.seMozeImplicitnoPretvoritiUT(inicijalizator.tip), de);
+
             } else if (Tip.isNizT(izravniDeklarator.tip) || Tip.isNizConstT(izravniDeklarator.tip)) {
                 assertOrError(inicijalizator.br_elem <= izravniDeklarator.br_elem, de);
-                assertOrError(inicijalizator.tipovi != null, de);   // TODO nije po uputama, ali popravlja jedan test-case. Nije mi jasno zasto je tu potrebno
+                assertOrError(inicijalizator.tipovi != null, de); // TODO nije po uputama, ali popravlja jedan
+                                                                  // test-case. Nije mi jasno zasto je tu potrebno
                 for (Tip u : inicijalizator.tipovi) {
                     assertOrError(Tip.seMozeImplicitnoPretvoritiUT(u), de);
                 }
             } else {
                 ispisiError(de);
             }
+            return sb.toString();
         }
     }
 
@@ -1241,88 +1278,106 @@ public class Generator {
             // <izravni_deklarator> ::= IDN
             Konstanta identifikator = (Konstanta) de.children.get(0);
 
-            assertOrError( ! de.ntip.equals(new Tip(TipEnum.VOID)), de);
-            assertOrError( ! lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost), de);
+            assertOrError(!de.ntip.equals(new Tip(TipEnum.VOID)), de);
+            assertOrError(!lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost), de);
             Identifikator idn = zabiljeziIdentifikator(identifikator.vrijednost, de.ntip);
 
             de.tip = de.ntip;
+            de.labela = idn.labela;
         } else if (de.children.get(2) instanceof Konstanta) {
+            throw new UnsupportedOperationException();/*
             Konstanta konstanta = (Konstanta) de.children.get(2);
             if (konstanta.konstantaTip == KonstantaEnum.BROJ) {
                 // <izravni_deklarator> ::= IDN L_UGL_ZAGRADA BROJ D_UGL_ZAGRADA
                 Konstanta identifikator = (Konstanta) de.children.get(0);
 
-                assertOrError( ! de.ntip.equals(new Tip(TipEnum.VOID)), de);
-                assertOrError( ! lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost), de);
+                assertOrError(!de.ntip.equals(new Tip(TipEnum.VOID)), de);
+                assertOrError(!lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost), de);
                 try {
                     Integer.parseInt(konstanta.vrijednost);
-                }
-                catch (Exception e) {
-                    ispisiError(de);  // integer izvan range-a (32 bit)
+                } catch (Exception e) {
+                    ispisiError(de); // integer izvan range-a (32 bit)
                 }
                 Tip tip = new KompozitniTip(TipEnum.NIZ, de.ntip);
-                zabiljeziIdentifikator(identifikator.vrijednost, tip);
+                Identifikator idn = zabiljeziIdentifikator(identifikator.vrijednost, tip);
 
                 de.tip = tip;
                 de.br_elem = Integer.parseInt(konstanta.vrijednost);
-            } else if (konstanta.konstantaTip == KonstantaEnum.KR_VOID) {
+                de.labela = idn.labela;
+            } else {
                 // <izravni_deklarator> ::= IDN L_ZAGRADA KR_VOID D_ZAGRADA
                 Konstanta identifikator = (Konstanta) de.children.get(0);
                 Tip tipFunkcije = new FunkcijaTip(new Tip[0], de.ntip);
-                
-                if (lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost)) {
-                    Tip tipDeklarirane = lokalniDjelokrug.varijabla(identifikator.vrijednost).tip;
+
+                IdentifikatorFunkcije idf = lokalniDjelokrug.funkcija(identifikator.vrijednost);
+                if (null != idf) {
+                    Tip tipDeklarirane = lokalniDjelokrug.funkcija(identifikator.vrijednost).tip;
                     assertOrError(tipDeklarirane.equals(tipFunkcije), de);
                 } else {
-                    zabiljeziIdentifikator(identifikator.vrijednost, tipFunkcije);
+                    idf = (IdentifikatorFunkcije) zabiljeziIdentifikator(identifikator.vrijednost, tipFunkcije);
                 }
 
                 de.tip = tipFunkcije;
+                de.labela = idf.labela;
             }
-        } else if (de.children.get(2) instanceof ListaParametara) {
+                //* */
+        } else {
             // <izravni_deklarator> ::= IDN L_ZAGRADA <lista_parametara> D_ZAGRADA
+            throw new UnsupportedOperationException();/*
             Konstanta identifikator = (Konstanta) de.children.get(0);
             ListaParametara listaParametara = (ListaParametara) de.children.get(2);
-            
+
             generiraj(listaParametara);
+
             Tip tipFunkcije = new FunkcijaTip(listaParametara.tipovi, de.ntip);
-            if (lokalniDjelokrug.sadrziLokalnuVarijablu(identifikator.vrijednost)) {
-                Tip tipDeklarirane = lokalniDjelokrug.varijabla(identifikator.vrijednost).tip;
+
+            IdentifikatorFunkcije idf = lokalniDjelokrug.funkcija(identifikator.vrijednost);
+            if (null != idf) {
+                Tip tipDeklarirane = idf.tip;
                 assertOrError(tipDeklarirane.equals(tipFunkcije), de);
             } else {
-                zabiljeziIdentifikator(identifikator.vrijednost, tipFunkcije);
+                idf = (IdentifikatorFunkcije) zabiljeziIdentifikator(identifikator.vrijednost, tipFunkcije);
             }
-            
+
             de.tip = tipFunkcije;
+            de.labela = idf.labela;
+            //* */
         }
     }
 
-    public void provjeri(Inicijalizator ic) {
+    public String generiraj(Inicijalizator ic) {
         if (ic.children.get(0) instanceof IzrazPridruzivanja) {
             // <inicijalizator> ::= <izraz_pridruzivanja>
             IzrazPridruzivanja izrazPridruzivanja = (IzrazPridruzivanja) ic.children.get(0);
 
-            provjeri(izrazPridruzivanja);
+            String s1 = generiraj(izrazPridruzivanja);
 
             Konstanta nizZnakova = izrazPridruzivanja.generira(KonstantaEnum.NIZ_ZNAKOVA);
             if (nizZnakova != null) {
+                // TODO support za iniijalizaciju niza charova nizom charova
+                throw new UnsupportedOperationException();/*
                 Tip[] tipovi = new Tip[ic.br_elem];
                 for (int i = 0; i < ic.br_elem; i++) {
                     tipovi[i] = new Tip(TipEnum.CHAR);
                 }
                 ic.br_elem = nizZnakova.vrijednost.length() + 1;
                 ic.tipovi = tipovi;
+                //* */
             } else {
                 ic.tip = izrazPridruzivanja.tip;
+                return s1;
             }
         } else {
             // <inicijalizator> ::= L_VIT_ZAGRADA <lista_izraza_pridruzivanja> D_VIT_ZAGRADA
+            // ovo je za inicijalizacije listi
+            throw new UnsupportedOperationException();/*
             ListaIzrazaPridruzivanja listaIzrazaPridruzivanja = (ListaIzrazaPridruzivanja) ic.children.get(1);
 
             provjeri(listaIzrazaPridruzivanja);
 
             ic.br_elem = listaIzrazaPridruzivanja.br_elem;
             ic.tipovi = listaIzrazaPridruzivanja.tipovi;
+            //* */
         }
     }
 
@@ -1331,7 +1386,7 @@ public class Generator {
             // <lista_izraza_pridruzivanja> ::= <izraz_pridruzivanja>
             IzrazPridruzivanja izrazPridruzivanja = (IzrazPridruzivanja) lp.children.get(0);
 
-            provjeri(izrazPridruzivanja);
+            // TODO provjeri(izrazPridruzivanja);
 
             Tip[] tipovi = { izrazPridruzivanja.tip };
             lp.tipovi = tipovi;
@@ -1343,7 +1398,7 @@ public class Generator {
             IzrazPridruzivanja izrazPridruzivanja = (IzrazPridruzivanja) lp.children.get(2);
 
             provjeri(listaIzrazaPridruzivanja);
-            provjeri(izrazPridruzivanja);
+            // TODO provjeri(izrazPridruzivanja);
 
             Tip[] tipovi = new Tip[listaIzrazaPridruzivanja.br_elem + 1];
             for (int i = 0; i < listaIzrazaPridruzivanja.tipovi.length; i++) {
