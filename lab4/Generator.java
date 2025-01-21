@@ -3,6 +3,7 @@ package lab4;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import lab4.tip.*;
 import lab4.znakovi.*;
@@ -73,7 +74,21 @@ public class Generator {
     }
 
     private String generirajFunkcije() {
-        throw new UnsupportedOperationException();  // TODO implement
+        StringBuilder sb = new StringBuilder();
+        for(Entry<String, IdentifikatorFunkcije> idfEntry : sveFunkcije.entrySet()) {
+            IdentifikatorFunkcije idf = idfEntry.getValue();
+            if(idf.labela == null) {
+                System.err.println(String.format("identifikator %s nema labelu a gneerirram mu funkciju?? kak su ju ikad druge funkcije pozivale/? huh", idf.ime));
+                throw new Error();
+            }
+            if(!idf.definirana) {
+                System.err.println(String.format("funkcija %s nije definirana?? h/? huh", idf.ime));
+                throw new Error();
+            }
+            sb.append(String.format("\n%s\t", idf.labela));
+            sb.append(generiraniKod);
+
+        }
     }
 
     private String novoImeLabele() {
@@ -253,74 +268,72 @@ public class Generator {
             iz.labela = izraz.labela;
             return s;
         }
-        else if (iz.children.get(0) instanceof PostfiksIzraz) {
+        else {
             PostfiksIzraz postfiksIzraz = (PostfiksIzraz) iz.children.get(0);
-            if (iz.children.get(1) instanceof Konstanta) {
-                Konstanta k1 = (Konstanta) iz.children.get(1);
-                if (k1.konstantaTip == KonstantaEnum.L_UGL_ZAGRADA) {
-                    // <postfiks_izraz> ::= <postfiks_izraz> L_UGL_ZAGRADA <izraz> D_UGL_ZAGRADA
-                    throw new UnsupportedOperationException();  // TODO support
-                    Izraz izraz = (Izraz) iz.children.get(2);
-                    
-                    generiraj(postfiksIzraz);
-                    assertOrError(Tip.isNizX(postfiksIzraz.tip), iz);
-                    generiraj(izraz);
-                    assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(izraz.tip, new Tip(TipEnum.INT)), iz);
+            Konstanta k1 = (Konstanta) iz.children.get(1);
+            if (k1.konstantaTip == KonstantaEnum.L_UGL_ZAGRADA) {
+                // <postfiks_izraz> ::= <postfiks_izraz> L_UGL_ZAGRADA <izraz> D_UGL_ZAGRADA
+                throw new UnsupportedOperationException();  // TODO support
+                Izraz izraz = (Izraz) iz.children.get(2);
+                
+                generiraj(postfiksIzraz);
+                assertOrError(Tip.isNizX(postfiksIzraz.tip), iz);
+                generiraj(izraz);
+                assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(izraz.tip, new Tip(TipEnum.INT)), iz);
 
-                    Tip X = ((KompozitniTip) postfiksIzraz.tip).subTip;
-                    iz.tip = X;
-                    iz.l_izraz = !Tip.isConstT(X);
-                } else if (k1.konstantaTip == KonstantaEnum.L_ZAGRADA && iz.children.size() == 3) {
-                    // <postfiks_izraz> ::= <postfiks_izraz> L_ZAGRADA D_ZAGRADA
-                    throw new UnsupportedOperationException();  // TODO support
+                Tip X = ((KompozitniTip) postfiksIzraz.tip).subTip;
+                iz.tip = X;
+                iz.l_izraz = !Tip.isConstT(X);
+            } else if (k1.konstantaTip == KonstantaEnum.L_ZAGRADA && iz.children.size() == 3) {
+                // <postfiks_izraz> ::= <postfiks_izraz> L_ZAGRADA D_ZAGRADA
+                throw new UnsupportedOperationException();  // TODO support
 
-                    generiraj(postfiksIzraz);
-                    assertOrError(postfiksIzraz.tip instanceof FunkcijaTip, iz);
-                    FunkcijaTip funkcijaTip = (FunkcijaTip) postfiksIzraz.tip;
-                    assertOrError(funkcijaTip.isVoidFunction(), iz);
+                String s1 = generiraj(postfiksIzraz);
+                assertOrError(postfiksIzraz.tip instanceof FunkcijaTip, iz);
+                FunkcijaTip funkcijaTip = (FunkcijaTip) postfiksIzraz.tip;
+                assertOrError(funkcijaTip.isVoidFunction(), iz);
 
-                    iz.tip = funkcijaTip.rval;
-                    iz.l_izraz = false;
-                } else if (k1.konstantaTip == KonstantaEnum.L_ZAGRADA && iz.children.size() == 4) {
-                    // <postfiks_izraz> ::= <postfiks_izraz> L_ZAGRADA <lista_argumenata> D_ZAGRADA
-                    throw new UnsupportedOperationException();  // TODO support
+                iz.tip = funkcijaTip.rval;
+                iz.l_izraz = false;
+            } else if (k1.konstantaTip == KonstantaEnum.L_ZAGRADA && iz.children.size() == 4) {
+                // <postfiks_izraz> ::= <postfiks_izraz> L_ZAGRADA <lista_argumenata> D_ZAGRADA
+                throw new UnsupportedOperationException();  // TODO support
 
-                    ListaArgumenata listaArgumenata = (ListaArgumenata) iz.children.get(2);
-                    generiraj(postfiksIzraz);
-                    provjeri(listaArgumenata);
-                    assertOrError(postfiksIzraz.tip instanceof FunkcijaTip, iz);
-                    FunkcijaTip funkcijaTip = (FunkcijaTip) postfiksIzraz.tip;
-                    assertOrError(listaArgumenata.tipovi.length == funkcijaTip.args.length, iz);
-                    for (int i = 0; i < listaArgumenata.tipovi.length; i++) {
-                        assertOrError(listaArgumenata.tipovi[i].equals(funkcijaTip.args[i]), iz);
-                    }
-
-                    iz.tip = funkcijaTip.rval;
-                    iz.l_izraz = false;
-
-                } else if (k1.konstantaTip == KonstantaEnum.OP_INC || k1.konstantaTip == KonstantaEnum.OP_DEC) {
-                    // <postfiks_izraz> ::= <postfiks_izraz> (OP_INC | OP_DEC)
-                    String s = generiraj(postfiksIzraz);
-                    assertOrError(postfiksIzraz.l_izraz == true, iz);
-                    assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(postfiksIzraz.tip, new Tip(TipEnum.INT)), iz);
-
-                    iz.tip = new Tip(TipEnum.INT);
-                    iz.l_izraz = false;
-
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(s);
-                    sb.append("\n\tPOP R0");
-                    sb.append("\n\tPUSH R0");
-                    if(k1.konstantaTip == KonstantaEnum.OP_INC){
-                        sb.append("\n'tADD R0, 1, R0");
-                    }
-                    else {
-                        sb.append("\n\tSUB R0, 1, R0");
-                    }
-                    sb.append(String.format("\n\tSTORE R0, %s", iz.labela));
-
-                    return sb.toString();
+                ListaArgumenata listaArgumenata = (ListaArgumenata) iz.children.get(2);
+                generiraj(postfiksIzraz);
+                provjeri(listaArgumenata);
+                assertOrError(postfiksIzraz.tip instanceof FunkcijaTip, iz);
+                FunkcijaTip funkcijaTip = (FunkcijaTip) postfiksIzraz.tip;
+                assertOrError(listaArgumenata.tipovi.length == funkcijaTip.args.length, iz);
+                for (int i = 0; i < listaArgumenata.tipovi.length; i++) {
+                    assertOrError(listaArgumenata.tipovi[i].equals(funkcijaTip.args[i]), iz);
                 }
+
+                iz.tip = funkcijaTip.rval;
+                iz.l_izraz = false;
+
+            } else {
+                // <postfiks_izraz> ::= <postfiks_izraz> (OP_INC | OP_DEC)
+                String s = generiraj(postfiksIzraz);
+                assertOrError(postfiksIzraz.l_izraz == true, iz);
+                assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(postfiksIzraz.tip, new Tip(TipEnum.INT)), iz);
+
+                iz.tip = new Tip(TipEnum.INT);
+                iz.l_izraz = false;
+
+                StringBuilder sb = new StringBuilder();
+                sb.append(s);
+                sb.append("\n\tPOP R0");
+                sb.append("\n\tPUSH R0");
+                if(k1.konstantaTip == KonstantaEnum.OP_INC){
+                    sb.append("\n'tADD R0, 1, R0");
+                }
+                else {
+                    sb.append("\n\tSUB R0, 1, R0");
+                }
+                sb.append(String.format("\n\tSTORE R0, %s", iz.labela));
+
+                return sb.toString();
             }
         }
     }
@@ -712,7 +725,7 @@ public class Generator {
             iz.labela = binIliIzraz.labela;
 
             return s;
-        } else if (iz.children.get(0) instanceof LogIIzraz) {
+        } else {
             // <log_i_izraz> ::= <log_i_izraz> OP_I <bin_ili_izraz>
             LogIIzraz logIIzraz = (LogIIzraz) iz.children.get(0);
             BinIliIzraz binIliIzraz = (BinIliIzraz) iz.children.get(2);
