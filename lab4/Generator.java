@@ -701,24 +701,7 @@ public class Generator {
             iz.tip = new Tip(TipEnum.INT);
             iz.l_izraz = false;
 
-            StringBuilder sb = new StringBuilder();
-            sb.append(s1);
-            sb.append("\n\tPOP R0");
-            sb.append("\n\tCMP R0, 0");
-            sb.append("\n\tMOVE 0, R2");
-            String l0 = novoImeLabele();
-            sb.append(String.format("\n\tJ_EQ %s", l0));
-
-            sb.append(s2);
-            sb.append("\n\tPOP R0");
-            sb.append("\n\tCMP R0, 0");
-            sb.append("\n\tMOVE 0, R2");
-            sb.append(String.format("\n\tJ_EQ %s", l0));
-
-            sb.append("\n\tMOVE 1, R2");
-            sb.append(String.format("\n%s\tPUSH R2", l0));
-
-            return sb.toString();
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -805,7 +788,24 @@ public class Generator {
             iz.tip = new Tip(TipEnum.INT);
             iz.l_izraz = false;
 
-            throw new UnsupportedOperationException();
+            StringBuilder sb = new StringBuilder();
+            sb.append(s1);
+            sb.append("\n\tPOP R0");
+            sb.append("\n\tCMP R0, 0");
+            sb.append("\n\tMOVE 0, R2");
+            String l0 = novoImeLabele();
+            sb.append(String.format("\n\tJ_EQ %s", l0));
+
+            sb.append(s2);
+            sb.append("\n\tPOP R0");
+            sb.append("\n\tCMP R0, 0");
+            sb.append("\n\tMOVE 0, R2");
+            sb.append(String.format("\n\tJ_EQ %s", l0));
+
+            sb.append("\n\tMOVE 1, R2");
+            sb.append(String.format("\n%s\tPUSH R2", l0));
+
+            return sb.toString();
         }
     }
 
