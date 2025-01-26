@@ -586,7 +586,7 @@ public class Generator {
             // <odnosni_izraz> ::= <odnosni_izraz> (OP_LT | OP_GT | OP_LTE | OP_GTE)
             // <aditivni_izraz>
             OdnosniIzraz odnosniIzraz = (OdnosniIzraz) iz.children.get(0);
-            Konstanta op = (Konstanta) iz.children.get(1);
+            Konstanta kljucnaRijec = (Konstanta) iz.children.get(1);
             AditivniIzraz aditivniIzraz = (AditivniIzraz) iz.children.get(2);
 
             String s1 = generiraj(odnosniIzraz);
@@ -597,8 +597,35 @@ public class Generator {
             iz.tip = new Tip(TipEnum.INT);
             iz.l_izraz = false;
 
-            throw new UnsupportedOperationException();
+            StringBuilder sb = new StringBuilder();
+            sb.append(s1);
+            sb.append(s2);
+            sb.append("\n\tPOP R1");
+            sb.append("\n\tPOP R0");
+            sb.append("\n\tCMP R0, R1");
+            sb.append("\n\tMOVE 1, R2");
+            String l1 = novoImeLabele();
+            switch (kljucnaRijec.konstantaTip) {
+                case KonstantaEnum.OP_LT:
+                    sb.append(String.format("\n\tJ_SLT %s", l1));
+                    break;
+                case KonstantaEnum.OP_GT:
+                    sb.append(String.format("\n\tJ_SGT %s", l1));
+                    break;
+                case KonstantaEnum.OP_LTE:
+                    sb.append(String.format("\n\tJ_SLE %s", l1));
+                    break;
+                case KonstantaEnum.OP_GTE:
+                    sb.append(String.format("\n\tJ_SGE %s", l1));
+                    break;
 
+                default:
+                    break;
+            }
+            sb.append("\n\tMOVE 0, R2");
+            sb.append(String.format("\n%s\tPUSH R2", l1));
+
+            return sb.toString();
         }
     }
 
