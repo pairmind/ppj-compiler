@@ -119,11 +119,13 @@ public class Generator {
 
     private IdentifikatorFunkcije deklarirajFunkciju(String ime, FunkcijaTip tip) {
         if (sveFunkcije.containsKey(ime)) {
-            zabiljeziIdentifikator(ime, tip);
-            return sveFunkcije.get(ime);
+            IdentifikatorFunkcije idf = sveFunkcije.get(ime);
+            lokalniDjelokrug.funkcije.put(ime, idf);
+            return idf;
         }
         // else
-        IdentifikatorFunkcije f = (IdentifikatorFunkcije) zabiljeziIdentifikator(ime, tip);
+        IdentifikatorFunkcije f = (IdentifikatorFunkcije) lokalniDjelokrug.zabiljeziIdentifikator(ime, tip);
+        f.labela = novoImeLabele();
         sveFunkcije.put(ime, f);
         return f;
     }
@@ -206,7 +208,6 @@ public class Generator {
             iz.l_izraz = false;
 
             StringBuilder sb = new StringBuilder();
-            // TODO: provjerit naredbu za pushanje konstante na stack
             sb.append(String.format("\n\tMOVE %%D %s, R1", Integer.parseInt(c.vrijednost)));
             sb.append("\n\tPUSH R1");
             return sb.toString();
@@ -257,6 +258,7 @@ public class Generator {
 
             iz.tip = izraz.tip;
             iz.l_izraz = izraz.l_izraz;
+            iz.labela = izraz.labela;
             return s;
         }
 
@@ -288,19 +290,22 @@ public class Generator {
 
                 Tip X = ((KompozitniTip) postfiksIzraz.tip).subTip;
                 iz.tip = X;
-                iz.l_izraz = !Tip.isConstT(X);//* */
+                iz.l_izraz = !Tip.isConstT(X);
+                iz.labela = postfiksIzraz.labela//* */
             } else if (k1.konstantaTip == KonstantaEnum.L_ZAGRADA && iz.children.size() == 3) {
                 // <postfiks_izraz> ::= <postfiks_izraz> L_ZAGRADA D_ZAGRADA
-                throw new UnsupportedOperationException(); // TODO support
-                /* 
 
-                String s1 = generiraj(postfiksIzraz);
+                // TODO: ovaj generiraj je ionak redundantan, makni ga sa svim ostalim vezanim iskljucivo uz prosli labos
+                generiraj(postfiksIzraz);
                 assertOrError(postfiksIzraz.tip instanceof FunkcijaTip, iz);
                 FunkcijaTip funkcijaTip = (FunkcijaTip) postfiksIzraz.tip;
                 assertOrError(funkcijaTip.isVoidFunction(), iz);
 
                 iz.tip = funkcijaTip.rval;
-                iz.l_izraz = false;//* */
+                iz.l_izraz = false;
+
+                return String.format("\n\tCALL %s", postfiksIzraz.labela) + "\n\tPUSH R6";
+
             } else if (k1.konstantaTip == KonstantaEnum.L_ZAGRADA && iz.children.size() == 4) {
                 // <postfiks_izraz> ::= <postfiks_izraz> L_ZAGRADA <lista_argumenata> D_ZAGRADA
                 throw new UnsupportedOperationException(); // TODO support
@@ -1397,9 +1402,10 @@ public class Generator {
             de.tip = de.ntip;
             de.labela = idn.labela;
         } else if (de.children.get(2) instanceof Konstanta) {
-            throw new UnsupportedOperationException();/*
             Konstanta konstanta = (Konstanta) de.children.get(2);
             if (konstanta.konstantaTip == KonstantaEnum.BROJ) {
+                throw new UnsupportedOperationException();
+                /*
                 // <izravni_deklarator> ::= IDN L_UGL_ZAGRADA BROJ D_UGL_ZAGRADA
                 Konstanta identifikator = (Konstanta) de.children.get(0);
 
@@ -1415,24 +1421,23 @@ public class Generator {
 
                 de.tip = tip;
                 de.br_elem = Integer.parseInt(konstanta.vrijednost);
-                de.labela = idn.labela;
+                de.labela = idn.labela;/* */
             } else {
                 // <izravni_deklarator> ::= IDN L_ZAGRADA KR_VOID D_ZAGRADA
                 Konstanta identifikator = (Konstanta) de.children.get(0);
-                Tip tipFunkcije = new FunkcijaTip(new Tip[0], de.ntip);
+                FunkcijaTip tipFunkcije = new FunkcijaTip(new Tip[0], de.ntip);
 
                 IdentifikatorFunkcije idf = lokalniDjelokrug.funkcija(identifikator.vrijednost);
                 if (null != idf) {
                     Tip tipDeklarirane = lokalniDjelokrug.funkcija(identifikator.vrijednost).tip;
                     assertOrError(tipDeklarirane.equals(tipFunkcije), de);
                 } else {
-                    idf = (IdentifikatorFunkcije) zabiljeziIdentifikator(identifikator.vrijednost, tipFunkcije);
+                    idf = (IdentifikatorFunkcije) deklarirajFunkciju(identifikator.vrijednost, tipFunkcije);
                 }
 
                 de.tip = tipFunkcije;
                 de.labela = idf.labela;
             }
-                //* */
         } else {
             // <izravni_deklarator> ::= IDN L_ZAGRADA <lista_parametara> D_ZAGRADA
             throw new UnsupportedOperationException();/*
