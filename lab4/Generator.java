@@ -980,8 +980,7 @@ public class Generator {
             throw new UnsupportedOperationException();
         } else if (na.children.get(0) instanceof NaredbaGrananja) {
             NaredbaGrananja naredba = (NaredbaGrananja) na.children.get(0);
-            // TODO return generiraj(naredba);
-            throw new UnsupportedOperationException();
+            return generiraj(naredba);
         } else if (na.children.get(0) instanceof NaredbaPetlje) {
             NaredbaPetlje naredba = (NaredbaPetlje) na.children.get(0);
             // TODO return generiraj(naredba);
@@ -1006,26 +1005,58 @@ public class Generator {
         }
     }
 
-    public void provjeri(NaredbaGrananja na) {
+    public String generiraj(NaredbaGrananja na) {
         if (na.children.size() == 5) {
             // <naredba_grananja> ::= KR_IF L_ZAGRADA <izraz> D_ZAGRADA <naredba>
             Izraz izraz = (Izraz) na.children.get(2);
             Naredba naredba = (Naredba) na.children.get(4);
 
-            generiraj(izraz);
+            String si = generiraj(izraz);
             assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(izraz.tip, new Tip(TipEnum.INT)), na);
-            generiraj(naredba);
-        } else if (na.children.size() == 7) {
+            String sn = generiraj(naredba);
+
+            StringBuilder sb = new StringBuilder();
+
+            sb.append(si);
+            sb.append("\n\tPOP R0");
+            sb.append("\n\tCMP R0, 0");
+            
+            String l1 = novoImeLabele();
+            sb.append(String.format("\n\tJP_EQ %s", l1));
+            sb.append(sn);
+            sb.append(String.format("\n%s", l1));
+
+            return sb.toString();
+
+        } else {
             // <naredba_grananja> ::= KR_IF L_ZAGRADA <izraz> D_ZAGRADA <naredba>1 KR_ELSE
             // <naredba>2
             Izraz izraz = (Izraz) na.children.get(2);
             Naredba naredba1 = (Naredba) na.children.get(4);
             Naredba naredba2 = (Naredba) na.children.get(6);
 
-            generiraj(izraz);
+            String sIzraz = generiraj(izraz);
             assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(izraz.tip, new Tip(TipEnum.INT)), na);
-            generiraj(naredba1);
-            generiraj(naredba2);
+            String sTrue = generiraj(naredba1);
+            String sFalse = generiraj(naredba2);
+            
+            StringBuilder sb = new StringBuilder();
+
+            sb.append(sIzraz);
+            sb.append("\n\tPOP R0");
+            sb.append("\n\tCMP R0, 0");
+            
+            String lElse = novoImeLabele();
+            String lEnd = novoImeLabele();
+            sb.append(String.format("\n\tJP_EQ %s", lElse));
+            sb.append(sTrue);
+            sb.append(String.format("\n\tJP %s", lEnd));
+
+            sb.append(String.format("\n%s", lElse));
+            sb.append(sFalse);
+            sb.append(String.format("\n%s", lEnd));
+
+            return sb.toString();
         }
     }
 
