@@ -34,6 +34,8 @@ public class Generator {
 
     // public void analiziraj(PrijevodnaJedinica prijevodnaJedinica) {
 
+        // TODO: remove all code connected strictly to the semantic analyzer
+
     // provjeri(prijevodnaJedinica);
 
     // assertOrError(postojiDefiniranaFunkcija("main"), "main");
@@ -615,6 +617,7 @@ public class Generator {
         } else {
             // <jednakosni_izraz> ::= <jednakosni_izraz> (OP_EQ | OP_NEQ) <odnosni_izraz>
             JednakosniIzraz jednakosniIzraz = (JednakosniIzraz) iz.children.get(0);
+            Konstanta kljucnaRijec = (Konstanta) iz.children.get(1);
             OdnosniIzraz odnosniIzraz = (OdnosniIzraz) iz.children.get(2);
 
             String s1 = generiraj(jednakosniIzraz);
@@ -625,7 +628,24 @@ public class Generator {
             iz.tip = new Tip(TipEnum.INT);
             iz.l_izraz = false;
 
-            throw new UnsupportedOperationException();
+            StringBuilder sb = new StringBuilder();
+            sb.append(s1);
+            sb.append(s2);
+            sb.append("\n\tPOP R1");
+            sb.append("\n\tPOP R0");
+            sb.append("\n\tCMP R0, R1");
+            sb.append("\n\tMOVE 1, R2");
+            String l1 = novoImeLabele();
+            if(kljucnaRijec.konstantaTip == KonstantaEnum.OP_EQ) {
+                sb.append(String.format("\n\tJ_EQ %s", l1));
+            }
+            else {
+                sb.append(String.format("\n\tJ_NE %s", l1));
+            }
+            sb.append("\n\tMOVE 0, R2");
+            sb.append(String.format("\n%s\tPUSH R2", l1));
+
+            return sb.toString();
         }
     }
 
