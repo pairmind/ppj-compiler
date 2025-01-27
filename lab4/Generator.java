@@ -981,8 +981,10 @@ public class Generator {
             return s1;
         } else if (na.children.get(0) instanceof IzrazNaredba) {
             IzrazNaredba naredba = (IzrazNaredba) na.children.get(0);
-            // TODO dal tu ide pop?
-            return generiraj(naredba);
+            /// TODO dal pop ide i na drugim mjestima gdje se generira IzrazNaredba?
+            /// dal se moze sam premjestit u generiranje IzrazNaredbe?
+            /// dal je potrebno pri generairanju nekih drugih izraza / naredbi
+            return generiraj(naredba) + "\n\tPOP R0";
         } else if (na.children.get(0) instanceof NaredbaGrananja) {
             NaredbaGrananja naredba = (NaredbaGrananja) na.children.get(0);
             return generiraj(naredba);
@@ -1212,13 +1214,20 @@ public class Generator {
             IdentifikatorFunkcije f = definirajFunkciju(identifikator.vrijednost, tipFunkcije);
             lokalniDjelokrug = new Djelokrug(lokalniDjelokrug);
             lokalniDjelokrug.setFunkcija(tipFunkcije);
-            for (int i = 0; i < listaParametara.tipovi.length; i++) {
-                // TODO TODO bitno, pobrinut se da oi dobiju labele, mozda pozivom funkcije ove
-                // klase
-                // also maknut argumente sa stacka il nes kad se poziva i sl. GL
-                lokalniDjelokrug.zabiljeziIdentifikator(listaParametara.imena[i], listaParametara.tipovi[i]);
+
+            StringBuilder sb = new StringBuilder();
+            // TODO: zbog ovog nacina handleanja argumenata nije moguca rekurzija
+            /// ide unazad jer se storaju na stack redom kojim su definirani, 
+            /// dakle popaju se obrnutim
+            for (int i = listaParametara.tipovi.length - 1; i >= 0 ; i--) {
+                Identifikator idn = zabiljeziIdentifikator(listaParametara.imena[i], listaParametara.tipovi[i]);
+                sb.append("\n\tPOP R0");
+                sb.append(String.format("\n\tSTORE R0, %s", idn.labela));
             }
-            f.kodTjelaFunkcije = generiraj(slozenaNaredba) + "\n\tRET"; // jer void funkcije ne moraju imat return;
+            
+            sb.append(generiraj(slozenaNaredba));
+            sb.append("\n\tRET"); // jer void funkcije ne moraju imat return;
+            f.kodTjelaFunkcije = sb.toString();
             lokalniDjelokrug = lokalniDjelokrug.ugnjezdujuciDjelokrug;
             return "";
         }
