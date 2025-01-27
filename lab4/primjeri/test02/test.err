@@ -1,0 +1,90 @@
+
+*********************************************************
+** FRISCjs - FRISC simulator in JavaScript
+** 
+** Usage instructions:
+** 
+**   pass filename argument with the FRISC program:
+**     > node main.js filename
+**   or input the FRISC program via stdin:
+**     > cat filename | node main.js
+** 
+** Note: the simulator has a memory module of 256KB,
+**       i.e. from 0x00000000 to 0x0003FFFF.
+** 
+** Verbose debugging mode can be turned on by passing
+**   specifying the -v flag, e.g.:
+** 
+**     > node main.js -v filename
+**   or
+**     > cat filename | node main.js -v
+** 
+** The CPU frequency (in Hz) can be set with the -cpufreq
+**   flag argument (default value is 1000):
+** 
+**     > node main.js -cpufreq 2 filename
+**   or
+**     > cat filename | node main.js -cpufreq 2
+** 
+** Memory size (in number of 1K locations) can be set with
+**   the -memsize flag argument (default value is 256):
+** 
+**     > node main.js -memsize 64 filename
+**   or
+**     > cat filename | node main.js -memsize 64
+** 
+** Execution flow:
+** 
+**   1) compilation of the FRISC program to machine code 
+**   2) step-by-step execution of FRISC program 
+**      with logging of processor state at each step  
+**      to stderr (if in verbose mode)
+**   3) output of r6 to stdout after program execution
+** 
+** GUI version of FRISC simulator is available at:
+** 
+**   http://fer-ppj.github.com/FRISCjs/main.html
+** 
+** Bug reports:
+** 
+**   mailto:ppj@zemris.fer.hr, or 
+**   http://github.com/fer-ppj/FRISCjs/issues
+*********************************************************
+
+
+*********************************************************
+Reading program from file: C:\Users\Lucija\Desktop\PPJ\LV\Check-lab-result-main\examples\test\test02\a.frisc
+*********************************************************
+
+
+*********************************************************
+Input FRISC program:
+*********************************************************
+
+	MOVE 40000, R7
+	MOVE 3C000, R5
+	LOAD R6, (R5)
+	HALT
+
+
+*********************************************************
+Parsing input FRISC program.
+*********************************************************
+
+
+*********************************************************
+Starting simulation!
+*********************************************************
+
+
+*********************************************************
+FRISC processor stopped! Status of CPU R6: 0
+*********************************************************
+
+
+C:\Users\Lucija\Desktop\PPJ\LV\Lab4\friscjs.js:898
+      throw {
+      ^
+{ name: 'Halting', message: 'Stop the CPU' }
+
+Node.js v20.9.0
