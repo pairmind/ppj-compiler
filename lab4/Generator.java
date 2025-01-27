@@ -525,6 +525,7 @@ public class Generator {
             // <multiplikativni_izraz> ::= <multiplikativni_izraz> (OP_PUTA | OP_DIJELI |
             // OP_MOD) <cast_izraz>
             MultiplikativniIzraz multiplikativniIzraz = (MultiplikativniIzraz) iz.children.get(0);
+            Konstanta op = (Konstanta) iz.children.get(1);
             CastIzraz castIzraz = (CastIzraz) iz.children.get(2);
 
             String s1 = generiraj(multiplikativniIzraz);
@@ -535,9 +536,31 @@ public class Generator {
             iz.tip = new Tip(TipEnum.INT);
             iz.l_izraz = false;
 
-            throw new UnsupportedOperationException();
-            // TODO: implement mnozenje i djeljennje i sl.
-            // return s1+s2; // :)
+            StringBuilder sb = new StringBuilder();
+            sb.append(s1);
+            sb.append(s2);
+            sb.append("\n\tPOP R1");
+            sb.append("\n\tPOP R0");
+            switch (op.konstantaTip) {
+                case KonstantaEnum.OP_PUTA:
+                    // TODO support za negativne brojeve
+                    sb.append("\n\tMOVE 0, R2");
+                    String loopLabela = novoImeLabele();
+                    sb.append(String.format("\n%s\tCMP R1, 0", loopLabela));
+                    String outLabela = novoImeLabele();
+                    sb.append(String.format("\n\tJP_EQ %s", outLabela));
+                    sb.append("\n\tADD R2, R0, R2");
+                    sb.append("\n\tSUB R1, 1, R1");
+                    sb.append(String.format("\n\tJP %s", loopLabela));
+                    sb.append(String.format("\n%s\tPUSH R2", outLabela));
+                    
+                    break;
+            
+                default:
+                throw new UnsupportedOperationException();
+                    // break;
+            }
+            return sb.toString();
         }
     }
 
