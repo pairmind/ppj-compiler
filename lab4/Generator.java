@@ -981,8 +981,8 @@ public class Generator {
             return s1;
         } else if (na.children.get(0) instanceof IzrazNaredba) {
             IzrazNaredba naredba = (IzrazNaredba) na.children.get(0);
-            // TODO return generiraj(naredba);
-            throw new UnsupportedOperationException();
+            // TODO dal tu ide pop?
+            return generiraj(naredba);
         } else if (na.children.get(0) instanceof NaredbaGrananja) {
             NaredbaGrananja naredba = (NaredbaGrananja) na.children.get(0);
             return generiraj(naredba);
@@ -996,17 +996,21 @@ public class Generator {
         }
     }
 
-    public void provjeri(IzrazNaredba na) {
+    public String generiraj(IzrazNaredba na) {
         if (na.children.get(0) instanceof Konstanta) {
             // <izraz_naredba> ::= TOCKAZAREZ
+            // TODO razmisli dal tu treba stavljat nes na stack; kaj for(;;) ocekuje?
             na.tip = new Tip(TipEnum.INT);
-        } else if (na.children.get(0) instanceof Izraz) {
+            return "";
+        } else {
             // <izraz_naredba> ::= <izraz> TOCKAZAREZ
             Izraz izraz = (Izraz) na.children.get(0);
 
-            generiraj(izraz);
+            String s = generiraj(izraz);
 
             na.tip = izraz.tip;
+
+            return s;
         }
     }
 
@@ -1066,7 +1070,8 @@ public class Generator {
     }
 
     public void provjeri(NaredbaPetlje na) {
-        Konstanta kljucnaRijec = (Konstanta) na.children.get(0);
+        throw new UnsupportedOperationException();
+        /*Konstanta kljucnaRijec = (Konstanta) na.children.get(0);
         if (kljucnaRijec.konstantaTip == KonstantaEnum.KR_WHILE) {
             // <naredba_petlje> ::= KR_WHILE L_ZAGRADA <izraz> D_ZAGRADA <naredba>
             Izraz izraz = (Izraz) na.children.get(2);
@@ -1099,7 +1104,7 @@ public class Generator {
             assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(izrazNaredba2.tip, new Tip(TipEnum.INT)), na);
             generiraj(izraz);
             generiraj(naredba);
-        }
+        }*/
     }
 
     public String generiraj(NaredbaSkoka na) {
