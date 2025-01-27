@@ -308,11 +308,10 @@ public class Generator {
 
             } else if (k1.konstantaTip == KonstantaEnum.L_ZAGRADA && iz.children.size() == 4) {
                 // <postfiks_izraz> ::= <postfiks_izraz> L_ZAGRADA <lista_argumenata> D_ZAGRADA
-                throw new UnsupportedOperationException(); // TODO support
-/*
                 ListaArgumenata listaArgumenata = (ListaArgumenata) iz.children.get(2);
+
                 generiraj(postfiksIzraz);
-                provjeri(listaArgumenata);
+                String s = generiraj(listaArgumenata);
                 assertOrError(postfiksIzraz.tip instanceof FunkcijaTip, iz);
                 FunkcijaTip funkcijaTip = (FunkcijaTip) postfiksIzraz.tip;
                 assertOrError(listaArgumenata.tipovi.length == funkcijaTip.args.length, iz);
@@ -321,7 +320,9 @@ public class Generator {
                 }
 
                 iz.tip = funkcijaTip.rval;
-                iz.l_izraz = false;//* */
+                iz.l_izraz = false;
+
+                return s + String.format("\n\tCALL %s", postfiksIzraz.labela) + "\n\tPUSH R6";
 
             } else {
                 // <postfiks_izraz> ::= <postfiks_izraz> (OP_INC | OP_DEC)
@@ -341,28 +342,32 @@ public class Generator {
                 } else {
                     sb.append("\n\tSUB R0, 1, R0");
                 }
-                sb.append(String.format("\n\tSTORE R0, %s", iz.labela));
+                sb.append(String.format("\n\tSTORE R0, (%s)", iz.labela));
 
                 return sb.toString();
             }
         }
     }
 
-    public void provjeri(ListaArgumenata la) {
+    public String generiraj(ListaArgumenata la) {
         if (la.children.get(0) instanceof IzrazPridruzivanja) {
             // <lista_argumenata> ::= <izraz_pridruzivanja>
             IzrazPridruzivanja izrazPridruzivanja = (IzrazPridruzivanja) la.children.get(0);
-            // TODO provjeri(izrazPridruzivanja);
+
+            String s = generiraj(izrazPridruzivanja);
 
             Tip[] tipovi = { izrazPridruzivanja.tip };
             la.tipovi = tipovi;
-        } else if (la.children.get(0) instanceof ListaArgumenata) {
+
+            return s;   // ovo ga pusha na stack, u tjelu funkcije se skida sa stacka
+
+        } else {
             // <lista_argumenata> ::= <lista_argumenata> ZAREZ <izraz_pridruzivanja>
             ListaArgumenata listaArgumenata = (ListaArgumenata) la.children.get(0);
             IzrazPridruzivanja izrazPridruzivanja = (IzrazPridruzivanja) la.children.get(2);
 
-            provjeri(listaArgumenata);
-            // TODO provjeri(izrazPridruzivanja);
+            String s1 = generiraj(listaArgumenata);
+            String s2 = generiraj(izrazPridruzivanja);
 
             Tip[] tipovi = new Tip[listaArgumenata.tipovi.length + 1];
             for (int i = 0; i < listaArgumenata.tipovi.length; i++) {
@@ -371,6 +376,9 @@ public class Generator {
             tipovi[listaArgumenata.tipovi.length] = izrazPridruzivanja.tip;
 
             la.tipovi = tipovi;
+
+            return s1 + s2;
+
         }
     }
 
@@ -1219,11 +1227,13 @@ public class Generator {
             // TODO: zbog ovog nacina handleanja argumenata nije moguca rekurzija
             /// ide unazad jer se storaju na stack redom kojim su definirani, 
             /// dakle popaju se obrnutim
+            sb.append("\n\tPOP R1");
             for (int i = listaParametara.tipovi.length - 1; i >= 0 ; i--) {
                 Identifikator idn = zabiljeziIdentifikator(listaParametara.imena[i], listaParametara.tipovi[i]);
                 sb.append("\n\tPOP R0");
-                sb.append(String.format("\n\tSTORE R0, %s", idn.labela));
+                sb.append(String.format("\n\tSTORE R0, (%s)", idn.labela));
             }
+            sb.append("\n\tPUSH R1");
             
             sb.append(generiraj(slozenaNaredba));
             sb.append("\n\tRET"); // jer void funkcije ne moraju imat return;
@@ -1235,54 +1245,54 @@ public class Generator {
     }
 
     public String generiraj(ListaParametara lp) {
-        throw new UnsupportedOperationException();
-        /*
-         * if (lp.children.get(0) instanceof DeklaracijaParametra) {
-         * // <lista_parametara> ::= <deklaracija_parametra>
-         * DeklaracijaParametra deklaracijaParametra = (DeklaracijaParametra)
-         * lp.children.get(0);
-         * 
-         * // TODO generiraj(deklaracijaParametra); // TODO provjeri, al vjv ne vraca
-         * nis
-         * 
-         * Tip[] tipovi = { deklaracijaParametra.tip };
-         * lp.tipovi = tipovi;
-         * String[] imena = { deklaracijaParametra.ime };
-         * lp.imena = imena;
-         * return "";
-         * } else if (lp.children.get(0) instanceof ListaParametara) {
-         * // <lista_parametara> ::= <lista_parametara> ZAREZ <deklaracija_parametra>
-         * ListaParametara listaParametara = (ListaParametara) lp.children.get(0);
-         * DeklaracijaParametra deklaracijaParametra = (DeklaracijaParametra)
-         * lp.children.get(2);
-         * 
-         * generiraj(listaParametara);
-         * provjeri(deklaracijaParametra);
-         * assertOrError(!Arrays.stream(listaParametara.imena).anyMatch(
-         * deklaracijaParametra.ime::equals), lp);
-         * // boolean anyEqual = false; // if anyMatch above does not work :)
-         * // for(String ime : listaParametara.imena) {
-         * // if( ime.equals(deklaracijaParametra.ime) ){
-         * // anyEqual = true;
-         * // break;
-         * // }
-         * // }
-         * // assertOrError(anyEqual, lp);
-         * 
-         * Tip[] tipovi = new Tip[listaParametara.tipovi.length + 1];
-         * String[] imena = new String[listaParametara.imena.length + 1];
-         * for (int i = 0; i < listaParametara.tipovi.length; i++) {
-         * tipovi[i] = listaParametara.tipovi[i];
-         * imena[i] = listaParametara.imena[i];
-         * }
-         * tipovi[listaParametara.tipovi.length] = deklaracijaParametra.tip;
-         * imena[listaParametara.imena.length] = deklaracijaParametra.ime;
-         * 
-         * lp.tipovi = tipovi;
-         * lp.imena = imena;
-         * }
-         * //
-         */
+        
+        if (lp.children.get(0) instanceof DeklaracijaParametra) {
+            // <lista_parametara> ::= <deklaracija_parametra>
+            DeklaracijaParametra deklaracijaParametra = (DeklaracijaParametra)
+            lp.children.get(0);
+            
+            provjeri(deklaracijaParametra);
+            
+            Tip[] tipovi = { deklaracijaParametra.tip };
+            lp.tipovi = tipovi;
+            String[] imena = { deklaracijaParametra.ime };
+            lp.imena = imena;
+            return "";
+        } else {
+            // <lista_parametara> ::= <lista_parametara> ZAREZ <deklaracija_parametra>
+            ListaParametara listaParametara = (ListaParametara) lp.children.get(0);
+            DeklaracijaParametra deklaracijaParametra = (DeklaracijaParametra)
+            lp.children.get(2);
+            
+            generiraj(listaParametara);
+            provjeri(deklaracijaParametra);
+            assertOrError(!Arrays.stream(listaParametara.imena).anyMatch(
+            deklaracijaParametra.ime::equals), lp);
+            // boolean anyEqual = false; // if anyMatch above does not work :)
+            // for(String ime : listaParametara.imena) {
+            // if( ime.equals(deklaracijaParametra.ime) ){
+            // anyEqual = true;
+            // break;
+            // }
+            // }
+            // assertOrError(anyEqual, lp);
+            
+            Tip[] tipovi = new Tip[listaParametara.tipovi.length + 1];
+            String[] imena = new String[listaParametara.imena.length + 1];
+            for (int i = 0; i < listaParametara.tipovi.length; i++) {
+                tipovi[i] = listaParametara.tipovi[i];
+                imena[i] = listaParametara.imena[i];
+            }
+            tipovi[listaParametara.tipovi.length] = deklaracijaParametra.tip;
+            imena[listaParametara.imena.length] = deklaracijaParametra.ime;
+            
+            lp.tipovi = tipovi;
+            lp.imena = imena;
+
+            return "";
+        }
+        
+        
     }
 
     public void provjeri(DeklaracijaParametra de) {
@@ -1454,25 +1464,23 @@ public class Generator {
             }
         } else {
             // <izravni_deklarator> ::= IDN L_ZAGRADA <lista_parametara> D_ZAGRADA
-            throw new UnsupportedOperationException();/*
             Konstanta identifikator = (Konstanta) de.children.get(0);
             ListaParametara listaParametara = (ListaParametara) de.children.get(2);
 
             generiraj(listaParametara);
 
-            Tip tipFunkcije = new FunkcijaTip(listaParametara.tipovi, de.ntip);
+            FunkcijaTip tipFunkcije = new FunkcijaTip(listaParametara.tipovi, de.ntip);
 
             IdentifikatorFunkcije idf = lokalniDjelokrug.funkcija(identifikator.vrijednost);
             if (null != idf) {
                 Tip tipDeklarirane = idf.tip;
                 assertOrError(tipDeklarirane.equals(tipFunkcije), de);
             } else {
-                idf = (IdentifikatorFunkcije) zabiljeziIdentifikator(identifikator.vrijednost, tipFunkcije);
+                idf = deklarirajFunkciju(identifikator.vrijednost, tipFunkcije);
             }
 
             de.tip = tipFunkcije;
             de.labela = idf.labela;
-            //* */
         }
     }
 
