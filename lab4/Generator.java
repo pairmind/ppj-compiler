@@ -654,16 +654,16 @@ public class Generator {
             String l1 = novoImeLabele();
             switch (kljucnaRijec.konstantaTip) {
                 case KonstantaEnum.OP_LT:
-                    sb.append(String.format("\n\tJ_SLT %s", l1));
+                    sb.append(String.format("\n\tJP_SLT %s", l1));
                     break;
                 case KonstantaEnum.OP_GT:
-                    sb.append(String.format("\n\tJ_SGT %s", l1));
+                    sb.append(String.format("\n\tJP_SGT %s", l1));
                     break;
                 case KonstantaEnum.OP_LTE:
-                    sb.append(String.format("\n\tJ_SLE %s", l1));
+                    sb.append(String.format("\n\tJP_SLE %s", l1));
                     break;
                 case KonstantaEnum.OP_GTE:
-                    sb.append(String.format("\n\tJ_SGE %s", l1));
+                    sb.append(String.format("\n\tJP_SGE %s", l1));
                     break;
 
                 default:
@@ -711,10 +711,10 @@ public class Generator {
             sb.append("\n\tMOVE 1, R2");
             String l1 = novoImeLabele();
             if(kljucnaRijec.konstantaTip == KonstantaEnum.OP_EQ) {
-                sb.append(String.format("\n\tJ_EQ %s", l1));
+                sb.append(String.format("\n\tJP_EQ %s", l1));
             }
             else {
-                sb.append(String.format("\n\tJ_NE %s", l1));
+                sb.append(String.format("\n\tJP_NE %s", l1));
             }
             sb.append("\n\tMOVE 0, R2");
             sb.append(String.format("\n%s\tPUSH R2", l1));
@@ -841,13 +841,13 @@ public class Generator {
             sb.append("\n\tCMP R0, 0");
             sb.append("\n\tMOVE 0, R2");
             String l0 = novoImeLabele();
-            sb.append(String.format("\n\tJ_EQ %s", l0));
+            sb.append(String.format("\n\tJP_EQ %s", l0));
 
             sb.append(s2);
             sb.append("\n\tPOP R0");
             sb.append("\n\tCMP R0, 0");
             sb.append("\n\tMOVE 0, R2");
-            sb.append(String.format("\n\tJ_EQ %s", l0));
+            sb.append(String.format("\n\tJP_EQ %s", l0));
 
             sb.append("\n\tMOVE 1, R2");
             sb.append(String.format("\n%s\tPUSH R2", l0));
@@ -887,13 +887,13 @@ public class Generator {
             sb.append("\n\tCMP R0, 0");
             sb.append("\n\tMOVE 1, R2");
             String l0 = novoImeLabele();
-            sb.append(String.format("\n\tJ_NE %s", l0));
+            sb.append(String.format("\n\tJP_NE %s", l0));
 
             sb.append(s2);
             sb.append("\n\tPOP R0");
             sb.append("\n\tCMP R0, 0");
             sb.append("\n\tMOVE 1, R2");
-            sb.append(String.format("\n\tJ_NE %s", l0));
+            sb.append(String.format("\n\tJP_NE %s", l0));
 
             sb.append("\n\tMOVE 0, R2");
             sb.append(String.format("\n%s\tPUSH R2", l0));
