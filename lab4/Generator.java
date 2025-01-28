@@ -449,6 +449,15 @@ public class Generator {
                 sb.append("\n\tADD R0, 1, R0");
                 sb.append("\n\tPUSH R0");
                 return sb.toString();
+            case KonstantaEnum.OP_NEG:
+                sb.append("\n\tPOP R0");
+                sb.append("\n\tCMP R0, 0");
+                sb.append("\n\tMOVE %D 1, R0");
+                String labela = novoImeLabele();
+                sb.append(String.format("\n\tJP_EQ %s", labela));
+                sb.append("\n\tMOVE %D 0, R0");
+                sb.append(String.format("\n%s\tPUSH R0", labela));
+                return sb.toString();
         
             default:
                 throw new Error("");
