@@ -545,17 +545,28 @@ public class Generator {
                 case KonstantaEnum.OP_PUTA:
                     // TODO support za negativne brojeve
                     sb.append("\n\tMOVE 0, R2");
-                    String loopLabela = novoImeLabele();
-                    sb.append(String.format("\n%s\tCMP R1, 0", loopLabela));
-                    String outLabela = novoImeLabele();
-                    sb.append(String.format("\n\tJP_EQ %s", outLabela));
+                    String loopMulLabela = novoImeLabele();
+                    sb.append(String.format("\n%s\tCMP R1, 0", loopMulLabela));
+                    String outMulLabela = novoImeLabele();
+                    sb.append(String.format("\n\tJP_EQ %s", outMulLabela));
                     sb.append("\n\tADD R2, R0, R2");
                     sb.append("\n\tSUB R1, 1, R1");
-                    sb.append(String.format("\n\tJP %s", loopLabela));
-                    sb.append(String.format("\n%s\tPUSH R2", outLabela));
+                    sb.append(String.format("\n\tJP %s", loopMulLabela));
+                    sb.append(String.format("\n%s\tPUSH R2", outMulLabela));
+
+                    break;
+                case KonstantaEnum.OP_MOD:
+                    String loopModLabela = novoImeLabele();
+                    sb.append(String.format("\n%s\tCMP R0, 0", loopModLabela));
+                    String outModLabela = novoImeLabele();
+                    sb.append(String.format("\n\tJP_SLT %s", outModLabela));
+                    sb.append("\n\tSUB R0, R1, R0");
+                    sb.append(String.format("\n\tJP %s", loopModLabela));
+                    sb.append(String.format("\n%s\tADD R0, R1, R0", outModLabela));
+                    sb.append("\n\tPUSH R0");
                     
                     break;
-            
+                    
                 default:
                 throw new UnsupportedOperationException();
                     // break;
