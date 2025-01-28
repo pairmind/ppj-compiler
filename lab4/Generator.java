@@ -458,6 +458,11 @@ public class Generator {
                 sb.append("\n\tMOVE %D 0, R0");
                 sb.append(String.format("\n%s\tPUSH R0", labela));
                 return sb.toString();
+            case KonstantaEnum.OP_TILDA:
+                sb.append("\n\tPOP R0");
+                sb.append("\n\tXOR R0, -1, R0");
+                sb.append("\n\tPUSH R0");
+                return sb.toString();
         
             default:
                 throw new Error("");
