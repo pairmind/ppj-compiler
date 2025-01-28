@@ -419,23 +419,39 @@ public class Generator {
             sb.append("\n\tPUSH R0");
 
             return sb.toString();
-        } else {// if (ui.children.get(0) instanceof UnarniOperator) {
+        } else {
             // <unarni_izraz> ::= <unarni_operator> <cast_izraz>
-            // UnarniOperator unarniOperator = (UnarniOperator) ui.children.get(0);
-            throw new UnsupportedOperationException(); // TODOs
-            // UnarniOperator unarniOperator = (UnarniOperator) ui.children.get(0);
-            // CastIzraz castIzraz = (CastIzraz) ui.children.get(1);
+            UnarniOperator unarniOperator = (UnarniOperator) ui.children.get(0);
+            CastIzraz castIzraz = (CastIzraz) ui.children.get(1);
 
-            // String s1 = generiraj(castIzraz);
-            // assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(castIzraz.tip, new
-            // Tip(TipEnum.INT)), ui);
+            String s1 = generiraj(castIzraz);
+            assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(castIzraz.tip, new
+            Tip(TipEnum.INT)), ui);
 
-            // // TODO String s2 = generiraj(unarniOperator);
+            String s2 = generiraj(unarniOperator);
 
-            // ui.tip = new Tip(TipEnum.INT);
-            // ui.l_izraz = false;
+            ui.tip = new Tip(TipEnum.INT);
+            ui.l_izraz = false;
 
-            // // return s1 + s2;
+            return s1 + s2;
+        }
+    }
+
+    public String generiraj(UnarniOperator uo) {
+        Konstanta operator = (Konstanta) uo.children.get(0);
+        StringBuilder sb = new StringBuilder();
+        switch (operator.konstantaTip) {
+            case KonstantaEnum.PLUS:
+                return "";
+            case KonstantaEnum.MINUS:
+                sb.append("\n\tPOP R0");
+                sb.append("\n\tXOR R0, -1, R0");
+                sb.append("\n\tADD R0, 1, R0");
+                sb.append("\n\tPUSH R0");
+                return sb.toString();
+        
+            default:
+                throw new Error("");
         }
     }
 
