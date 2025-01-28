@@ -342,7 +342,7 @@ public class Generator {
                 } else {
                     sb.append("\n\tSUB R0, 1, R0");
                 }
-                sb.append(String.format("\n\tSTORE R0, (%s)", iz.labela));
+                sb.append(String.format("\n\tSTORE R0, (%s)", postfiksIzraz.labela));
 
                 return sb.toString();
             }
