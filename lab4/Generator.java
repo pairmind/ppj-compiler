@@ -816,7 +816,15 @@ public class Generator {
             iz.tip = new Tip(TipEnum.INT);
             iz.l_izraz = false;
 
-            throw new UnsupportedOperationException();
+            StringBuilder sb = new StringBuilder();
+            sb.append(s1);
+            sb.append(s2);
+            sb.append("\n\tPOP R1");
+            sb.append("\n\tPOP R0");
+            sb.append("\n\tXOR R0, R1, R0");
+            sb.append("\n\tPUSH R0");
+
+            return sb.toString();
         }
     }
 
