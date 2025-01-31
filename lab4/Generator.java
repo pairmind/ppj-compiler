@@ -1087,8 +1087,7 @@ public class Generator {
             return generiraj(naredba);
         } else if (na.children.get(0) instanceof NaredbaPetlje) {
             NaredbaPetlje naredba = (NaredbaPetlje) na.children.get(0);
-            // TODO return generiraj(naredba);
-            throw new UnsupportedOperationException();
+            return generiraj(naredba);
         } else {
             NaredbaSkoka naredba = (NaredbaSkoka) na.children.get(0);
             return generiraj(naredba);
@@ -1168,32 +1167,47 @@ public class Generator {
         }
     }
 
-    public void provjeri(NaredbaPetlje na) {
-        throw new UnsupportedOperationException();
-        /*Konstanta kljucnaRijec = (Konstanta) na.children.get(0);
+    public String generiraj(NaredbaPetlje na) {
+        Konstanta kljucnaRijec = (Konstanta) na.children.get(0);
         if (kljucnaRijec.konstantaTip == KonstantaEnum.KR_WHILE) {
             // <naredba_petlje> ::= KR_WHILE L_ZAGRADA <izraz> D_ZAGRADA <naredba>
             Izraz izraz = (Izraz) na.children.get(2);
             Naredba naredba = (Naredba) na.children.get(4);
 
-            generiraj(izraz);
+            String cond = generiraj(izraz);
             assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(izraz.tip, new Tip(TipEnum.INT)), na);
-            generiraj(naredba);
+            String body = generiraj(naredba);
+
+            StringBuilder sb = new StringBuilder();
+            String loopLabela = novoImeLabele();
+            String exitLabela = novoImeLabele();
+            sb.append(String.format("\n%s\t", loopLabela));
+            sb.append(cond);
+            sb.append("\n\tPOP R0");
+            sb.append("\n\tCMP R0, 0");
+            sb.append(String.format("\n\tJP_EQ %s", exitLabela));
+            sb.append(body);
+            sb.append(String.format("\n\tJP %s", loopLabela));
+            sb.append(String.format("\n%s\t", exitLabela));
+
+            return sb.toString();
         } else if (kljucnaRijec.konstantaTip == KonstantaEnum.KR_FOR && na.children.size() == 6) {
             // <naredba_petlje> ::= KR_FOR L_ZAGRADA <izraz_naredba>1 <izraz_naredba>2
             // D_ZAGRADA <naredba>
-            IzrazNaredba izrazNaredba1 = (IzrazNaredba) na.children.get(2);
+            throw new UnsupportedOperationException();
+            /*IzrazNaredba izrazNaredba1 = (IzrazNaredba) na.children.get(2);
             IzrazNaredba izrazNaredba2 = (IzrazNaredba) na.children.get(3);
             Naredba naredba = (Naredba) na.children.get(5);
 
             provjeri(izrazNaredba1);
             provjeri(izrazNaredba2);
             assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(izrazNaredba2.tip, new Tip(TipEnum.INT)), na);
-            generiraj(naredba);
-        } else if (kljucnaRijec.konstantaTip == KonstantaEnum.KR_FOR && na.children.size() == 7) {
+            generiraj(naredba); */
+        } else {
             // <naredba_petlje> ::= KR_FOR L_ZAGRADA <izraz_naredba>1 <izraz_naredba>2
             // <izraz> D_ZAGRADA <naredba>
-            IzrazNaredba izrazNaredba1 = (IzrazNaredba) na.children.get(2);
+            throw new UnsupportedOperationException();
+            /* IzrazNaredba izrazNaredba1 = (IzrazNaredba) na.children.get(2);
             IzrazNaredba izrazNaredba2 = (IzrazNaredba) na.children.get(3);
             Izraz izraz = (Izraz) na.children.get(4);
             Naredba naredba = (Naredba) na.children.get(6);
@@ -1202,8 +1216,8 @@ public class Generator {
             provjeri(izrazNaredba2);
             assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(izrazNaredba2.tip, new Tip(TipEnum.INT)), na);
             generiraj(izraz);
-            generiraj(naredba);
-        }*/
+            generiraj(naredba); */
+        }
     }
 
     public String generiraj(NaredbaSkoka na) {
