@@ -1071,6 +1071,7 @@ public class Generator {
             // slozena naredba u novom djelokrugu
             lokalniDjelokrug = new Djelokrug(lokalniDjelokrug);
             if (na.parent instanceof NaredbaPetlje) {
+                // TODO: ovo ne radi ni u semantickoj analizi, djelokrug je kriv, naredbe u oblatim zagradama fora mu ne pripadaju
                 lokalniDjelokrug.tipDjelokruga = TipDjelokruga.PETLJA;
             }
             String s1 = generiraj(naredba);
@@ -1078,9 +1079,6 @@ public class Generator {
             return s1;
         } else if (na.children.get(0) instanceof IzrazNaredba) {
             IzrazNaredba naredba = (IzrazNaredba) na.children.get(0);
-            /// TODO dal pop ide i na drugim mjestima gdje se generira IzrazNaredba?
-            /// dal se moze sam premjestit u generiranje IzrazNaredbe?
-            /// dal je potrebno pri generairanju nekih drugih izraza / naredbi
             return generiraj(naredba) + "\n\tPOP R0";
         } else if (na.children.get(0) instanceof NaredbaGrananja) {
             NaredbaGrananja naredba = (NaredbaGrananja) na.children.get(0);
@@ -1097,7 +1095,6 @@ public class Generator {
     public String generiraj(IzrazNaredba na) {
         if (na.children.get(0) instanceof Konstanta) {
             // <izraz_naredba> ::= TOCKAZAREZ
-            // TODO razmisli dal tu treba stavljat nes na stack; kaj for(;;) ocekuje?
             na.tip = new Tip(TipEnum.INT);
             return "";
         } else {
@@ -1194,29 +1191,58 @@ public class Generator {
         } else if (kljucnaRijec.konstantaTip == KonstantaEnum.KR_FOR && na.children.size() == 6) {
             // <naredba_petlje> ::= KR_FOR L_ZAGRADA <izraz_naredba>1 <izraz_naredba>2
             // D_ZAGRADA <naredba>
-            throw new UnsupportedOperationException();
-            /*IzrazNaredba izrazNaredba1 = (IzrazNaredba) na.children.get(2);
+            IzrazNaredba izrazNaredba1 = (IzrazNaredba) na.children.get(2);
             IzrazNaredba izrazNaredba2 = (IzrazNaredba) na.children.get(3);
             Naredba naredba = (Naredba) na.children.get(5);
 
-            provjeri(izrazNaredba1);
-            provjeri(izrazNaredba2);
+            String iz1 = generiraj(izrazNaredba1) + "\n\tPOP R0";
+            String cond = generiraj(izrazNaredba2);
             assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(izrazNaredba2.tip, new Tip(TipEnum.INT)), na);
-            generiraj(naredba); */
+            String body = generiraj(naredba);
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(iz1);
+            String loopLabela = novoImeLabele();
+            String exitLabela = novoImeLabele();
+            sb.append(String.format("\n%s\t", loopLabela));
+            sb.append(cond);
+            sb.append("\n\tPOP R0");
+            sb.append("\n\tCMP R0, 0");
+            sb.append(String.format("\n\tJP_EQ %s", exitLabela));
+            sb.append(body);
+            sb.append(String.format("\n\tJP %s", loopLabela));
+            sb.append(String.format("\n%s\t", exitLabela));
+
+            return sb.toString();
         } else {
             // <naredba_petlje> ::= KR_FOR L_ZAGRADA <izraz_naredba>1 <izraz_naredba>2
             // <izraz> D_ZAGRADA <naredba>
-            throw new UnsupportedOperationException();
-            /* IzrazNaredba izrazNaredba1 = (IzrazNaredba) na.children.get(2);
+            IzrazNaredba izrazNaredba1 = (IzrazNaredba) na.children.get(2);
             IzrazNaredba izrazNaredba2 = (IzrazNaredba) na.children.get(3);
             Izraz izraz = (Izraz) na.children.get(4);
             Naredba naredba = (Naredba) na.children.get(6);
 
-            provjeri(izrazNaredba1);
-            provjeri(izrazNaredba2);
+            String iz1 = generiraj(izrazNaredba1) + "\n\tPOP R0";
+            String cond = generiraj(izrazNaredba2);
             assertOrError(Tip.seMozeImplicitnoPretvoritiIzU(izrazNaredba2.tip, new Tip(TipEnum.INT)), na);
-            generiraj(izraz);
-            generiraj(naredba); */
+            String iterate = generiraj(izraz) + "\n\tPOP R0";
+            String body = generiraj(naredba);
+            
+            StringBuilder sb = new StringBuilder();
+            sb.append(iz1);
+            String loopLabela = novoImeLabele();
+            String exitLabela = novoImeLabele();
+            sb.append(String.format("\n%s\t", loopLabela));
+            sb.append(cond);
+            sb.append("\n\tPOP R0");
+            sb.append("\n\tCMP R0, 0");
+            sb.append(String.format("\n\tJP_EQ %s", exitLabela));
+            sb.append(body);
+            sb.append(iterate);
+            sb.append(String.format("\n\tJP %s", loopLabela));
+            sb.append(String.format("\n%s\t", exitLabela));
+
+            return sb.toString();
         }
     }
 
