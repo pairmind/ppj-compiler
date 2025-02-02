@@ -634,8 +634,8 @@ public class Generator {
             StringBuilder sb = new StringBuilder();
             sb.append(s1);
             sb.append(s2);
-            sb.append("\n\tPOP R0");
             sb.append("\n\tPOP R1");
+            sb.append("\n\tPOP R0");
             if (op.konstantaTip == KonstantaEnum.PLUS) {
                 sb.append("\n\tADD R0, R1, R0");
             } else {
