@@ -1,8 +1,2 @@
-*.jar
-primjer.*
-*.lan
+out.txt
 *.zip
-file*.txt
-txt.txt
-
-.vscode
