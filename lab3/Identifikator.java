@@ -1,6 +1,7 @@
 package lab3;
 
 import lab3.tip.*;
+import lab3.tip.TipEnum;
 
 public class Identifikator {
    public Tip tip;

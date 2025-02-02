@@ -16,12 +16,10 @@ public class Analizator {
     }
 
     public void analiziraj(PrijevodnaJedinica prijevodnaJedinica) {
-
+        // System.out.println("ANALIZIRAM");
         provjeri(prijevodnaJedinica);
-
-        assertOrError(postojiDefiniranaFunkcija("main"), "main");
-
         // TODO provjere nakon stabla
+        // TODO zaustaviti program nakon greske
     }
 
 
@@ -52,19 +50,11 @@ public class Analizator {
     private void assertOrError(boolean condition, Node mistake) {
         if (!condition) {
             ispisiError(mistake);
-        }
-    }
-    private void assertOrError(boolean condition, String mistake) {
-        if (!condition) {
-            ispisiError(mistake);
+            // TODO: stop everything
         }
     }
 
-    private void ispisiError(String mistake) {
-        System.out.println(mistake);
-        System.exit(0);
-    }
-
+    // TODO: check if works
     private void ispisiError(Node mistake) {
 
         System.out.printf(mistake.toString() + " ::=");
